@@ -1,0 +1,39 @@
+{
+    "name": "littlesqx/aint-queue",
+    "description": "Queue but not only queue, which powered by swoole.",
+    "type": "library",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "littlesqx",
+            "email": "littlesqx@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.1",
+        "predis/predis": "^1.1",
+        "psr/log": "^1.1",
+        "symfony/process": "^4.3",
+        "monolog/monolog": "^1.24",
+        "jeremeamia/superclosure": "^2.4"
+    },
+    "autoload": {
+        "psr-4": {
+            "Littlesqx\\AintQueue\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests"
+        }
+    },
+    "suggest": {
+        "php": ">=7.1"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^8.3"
+    },
+    "scripts": {
+        "test": "./vendor/bin/phpunit"
+    }
+}
