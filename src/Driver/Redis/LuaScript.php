@@ -10,6 +10,13 @@
 
 namespace Littlesqx\AintQueue\Driver\Redis;
 
+/**
+ * Class LuaScripts
+ *
+ * @credit This file is migrated from illuminate/queue.
+ *
+ * @package Littlesqx\AintQueue\Driver\Redis
+ */
 class LuaScripts
 {
     /**
