@@ -19,7 +19,7 @@ interface Serializer
      *
      * @return string
      */
-    public function serializer($object): string;
+    public function serialize($object): string;
 
     /**
      * Recover serialized string to object.
@@ -28,5 +28,5 @@ interface Serializer
      *
      * @return object
      */
-    public function unSerializer(string $serialized);
+    public function unSerialize(string $serialized);
 }

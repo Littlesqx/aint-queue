@@ -23,15 +23,15 @@ class SerializerTest extends TestCase
     {
         $serializer = new PhpSerializer();
         $this->expectException(\InvalidArgumentException::class);
-        $serializer->serializer(1);
+        $serializer->serialize(1);
         $this->expectException(\InvalidArgumentException::class);
-        $serializer->serializer(false);
+        $serializer->serialize(false);
         $this->expectException(\InvalidArgumentException::class);
-        $serializer->serializer([]);
+        $serializer->serialize([]);
         $this->expectException(\InvalidArgumentException::class);
-        $serializer->serializer('string');
+        $serializer->serialize('string');
         $this->expectException(\InvalidArgumentException::class);
-        $serializer->serializer(function () {});
+        $serializer->serialize(function () {});
     }
 
     /**
@@ -43,11 +43,11 @@ class SerializerTest extends TestCase
         $object = new \stdClass();
         $object->name = 'anonymous';
 
-        $serialized = $serializer->serializer($object);
+        $serialized = $serializer->serialize($object);
 
         $this->assertIsString($serialized);
 
-        $object = $serializer->unSerializer($serialized);
+        $object = $serializer->unSerialize($serialized);
 
         $this->assertIsObject($object);
         $this->assertSame('anonymous', $object->name);
@@ -60,15 +60,15 @@ class SerializerTest extends TestCase
     {
         $serializer = new ClosureSerializer();
         $this->expectException(\InvalidArgumentException::class);
-        $serializer->serializer(1);
+        $serializer->serialize(1);
         $this->expectException(\InvalidArgumentException::class);
-        $serializer->serializer(false);
+        $serializer->serialize(false);
         $this->expectException(\InvalidArgumentException::class);
-        $serializer->serializer([]);
+        $serializer->serialize([]);
         $this->expectException(\InvalidArgumentException::class);
-        $serializer->serializer('string');
+        $serializer->serialize('string');
         $this->expectException(\InvalidArgumentException::class);
-        $serializer->serializer(new \stdClass());
+        $serializer->serialize(new \stdClass());
     }
 
     /**
@@ -77,13 +77,13 @@ class SerializerTest extends TestCase
     public function closure_serializer_can_serialize_closure()
     {
         $serializer = new ClosureSerializer();
-        $serialized = $serializer->serializer(function () {
+        $serialized = $serializer->serialize(function () {
             return 'I am a closure';
         });
 
         $this->assertIsString($serialized);
 
-        $closure = $serializer->unSerializer($serialized);
+        $closure = $serializer->unSerialize($serialized);
 
         $this->assertIsCallable($closure);
 

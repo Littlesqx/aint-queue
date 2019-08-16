@@ -28,7 +28,7 @@ class ClosureSerializer implements Serializer
      *
      * @return string
      */
-    public function serializer($closure): string
+    public function serialize($closure): string
     {
         if (!is_callable($closure)) {
             throw new \InvalidArgumentException('Argument invalid, it must be callable.');
@@ -44,7 +44,7 @@ class ClosureSerializer implements Serializer
      *
      * @return \Closure
      */
-    public function unSerializer(string $serialized)
+    public function unSerialize(string $serialized)
     {
         return $this->executor->unserialize($serialized);
     }

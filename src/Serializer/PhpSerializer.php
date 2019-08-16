@@ -19,7 +19,7 @@ class PhpSerializer implements Serializer
      *
      * @return string
      */
-    public function serializer($object): string
+    public function serialize($object): string
     {
         if (!is_object($object)) {
             throw new \InvalidArgumentException('Argument invalid, it must be an object.');
@@ -35,7 +35,7 @@ class PhpSerializer implements Serializer
      *
      * @return object
      */
-    public function unSerializer(string $serialized)
+    public function unSerialize(string $serialized)
     {
         return unserialize($serialized);
     }
