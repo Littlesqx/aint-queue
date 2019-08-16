@@ -10,7 +10,7 @@
 
 namespace Littlesqx\AintQueue;
 
-class AbstractQueue implements QueueInterface
+interface QueueInterface
 {
     /**
      * Push an executable job message into queue.
@@ -19,18 +19,12 @@ class AbstractQueue implements QueueInterface
      *
      * @return mixed
      */
-    public function push($job)
-    {
-        // TODO: Implement push() method.
-    }
+    public function push($job);
 
     /**
      * Pop an job message from queue.
      *
      * @return mixed
      */
-    public function pop()
-    {
-        // TODO: Implement pop() method.
-    }
+    public function pop();
 }

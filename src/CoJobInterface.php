@@ -10,6 +10,6 @@
 
 namespace Littlesqx\AintQueue;
 
-interface Job
+interface CoJobInterface extends JobInterface
 {
 }
