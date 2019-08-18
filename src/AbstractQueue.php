@@ -10,27 +10,33 @@
 
 namespace Littlesqx\AintQueue;
 
-class AbstractQueue implements QueueInterface
+abstract class AbstractQueue implements QueueInterface
 {
-    /**
-     * Push an executable job message into queue.
-     *
-     * @param $job
-     *
-     * @return mixed
-     */
-    public function push($job)
+    protected $channel = '';
+
+    protected $topic = 'default';
+
+    /** @var AbstractQueue[] */
+    protected static $instances = [];
+
+    public function __construct(string $topic)
     {
-        // TODO: Implement push() method.
+        $this->topic = $topic;
     }
 
     /**
-     * Pop an job message from queue.
+     * Get a singleton for queue.
      *
-     * @return mixed
+     * @param $topic
+     *
+     * @return AbstractQueue
      */
-    public function pop()
+    public static function getInstance($topic): AbstractQueue
     {
-        // TODO: Implement pop() method.
+        if (!isset(self::$instances[$topic])) {
+            self::$instances[$topic] = new static($topic);
+        }
+
+        return self::$instances[$topic];
     }
 }

@@ -15,11 +15,11 @@ interface QueueInterface
     /**
      * Push an executable job message into queue.
      *
-     * @param $job
+     * @param $message
      *
      * @return mixed
      */
-    public function push($job);
+    public function push($message);
 
     /**
      * Pop an job message from queue.
@@ -27,4 +27,29 @@ interface QueueInterface
      * @return mixed
      */
     public function pop();
+
+    /**
+     * Remove specific job from current queue.
+     *
+     * @param $id
+     *
+     * @return mixed
+     */
+    public function remove($id);
+
+    /**
+     * Get status of specific job.
+     *
+     * @param $id
+     *
+     * @return mixed
+     */
+    public function status($id);
+
+    /**
+     * CLear current queue,
+     *
+     * @return mixed
+     */
+    public function clear();
 }

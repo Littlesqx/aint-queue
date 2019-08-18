@@ -22,7 +22,7 @@ interface JobInterface
     public function handle(QueueInterface $queue);
 
     /**
-     * Get current job's max execution time.
+     * Get current job's max execution time(seconds).
      *
      * @return int
      */
@@ -34,7 +34,7 @@ interface JobInterface
      * @param int $attempt
      * @param $error
      *
-     * @return mixed
+     * @return bool
      */
-    public function canRetry(int $attempt, $error);
+    public function canRetry(int $attempt, $error): bool;
 }
