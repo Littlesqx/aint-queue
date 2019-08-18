@@ -10,6 +10,14 @@
 
 namespace Littlesqx\AintQueue;
 
-class Worker
+interface WorkerInterface
 {
+    /**
+     * deliver an task into current worker.
+     *
+     * @param \Closure|JobInterface $task
+     *
+     * @return mixed
+     */
+    public function deliver($task);
 }
