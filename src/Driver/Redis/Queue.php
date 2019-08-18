@@ -61,7 +61,7 @@ class Queue extends AbstractQueue
     }
 
     /**
-     * CLear current queue,
+     * CLear current queue,.
      *
      * @return mixed
      */

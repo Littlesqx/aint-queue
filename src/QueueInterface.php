@@ -47,7 +47,7 @@ interface QueueInterface
     public function status($id);
 
     /**
-     * CLear current queue,
+     * CLear current queue,.
      *
      * @return mixed
      */
