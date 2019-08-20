@@ -47,9 +47,20 @@ interface QueueInterface
     public function status($id);
 
     /**
-     * CLear current queue,.
+     * Clear current queue.
      *
      * @return mixed
      */
     public function clear();
+
+    /**
+     * Get job message from queue.
+     *
+     * @param int $id
+     *
+     * @return mixed
+     */
+    public function get($id);
+
+    public function getTopic(): string;
 }

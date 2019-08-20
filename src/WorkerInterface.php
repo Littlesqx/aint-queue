@@ -15,9 +15,11 @@ interface WorkerInterface
     /**
      * deliver an task into current worker.
      *
-     * @param \Closure|JobInterface $task
+     * @param QueueInterface $queue
+     * @param int $messageId
+     * @param \Closure|JobInterface $message
      *
      * @return mixed
      */
-    public function deliver($task);
+    public function deliver(QueueInterface $queue, $messageId, $message);
 }

@@ -11,9 +11,23 @@
 namespace Littlesqx\AintQueue\Driver\Redis;
 
 use Littlesqx\AintQueue\AbstractQueue;
+use Littlesqx\AintQueue\JobInterface;
+use Littlesqx\AintQueue\Serializer\Factory;
+use Predis\Client;
 
 class Queue extends AbstractQueue
 {
+    protected $redis;
+
+    public function __construct(string $topic)
+    {
+        parent::__construct($topic);
+
+        $this->redis = new Client(null, [
+            'read_write_timeout' => -1,
+        ]);
+    }
+
     /**
      * Push an executable job message into queue.
      *
@@ -21,9 +35,36 @@ class Queue extends AbstractQueue
      *
      * @return mixed
      */
-    public function push($message)
+    public function push($message): void
     {
-        // TODO: Implement push() method.
+        $serializedMessage = null;
+        $serializerType = null;
+
+        if (is_callable($message)) {
+            $serializedMessage = $this->closureSerializer->serialize($message);
+            $serializerType = Factory::SERIALIZER_TYPE_CLOSURE;
+        } elseif ($message instanceof JobInterface) {
+            $serializedMessage = $this->phpSerializer->serialize($message);
+            $serializerType = Factory::SERIALIZER_TYPE_PHP;
+        } else {
+            throw new \InvalidArgumentException(gettype($message) . ' type message is not allowed.');
+        }
+
+        $pushMessage = \json_encode([
+            'serializerType' => $serializerType,
+            'serializedMessage' => $serializedMessage
+        ]);
+
+        $id = $this->redis->incr("{$this->singleChannel}.{$this->topic}.message_id");
+        $this->redis->hset("{$this->singleChannel}.{$this->topic}.messages", $id, $pushMessage);
+
+
+
+        if ($this->pushDelay <= 0) {
+            $this->redis->lpush("{$this->singleChannel}.{$this->topic}.waiting", [$id]);
+        } else {
+            $this->redis->zadd("{$this->singleChannel}.{$this->topic}.delayed", [$id => time() + $this->pushDelay]);
+        }
     }
 
     /**
@@ -33,7 +74,9 @@ class Queue extends AbstractQueue
      */
     public function pop()
     {
-        // TODO: Implement pop() method.
+        $id = $this->redis->blpop(["{$this->singleChannel}.{$this->topic}.waiting"], 0)[1] ?? 0;
+
+        return $this->get($id);
     }
 
     /**
@@ -61,12 +104,40 @@ class Queue extends AbstractQueue
     }
 
     /**
-     * CLear current queue,.
+     * Clear current queue.
      *
      * @return mixed
      */
     public function clear()
     {
-        // TODO: Implement clear() method.
+        $keys = $this->redis->keys("{$this->singleChannel}.{$this->topic}.*");
+        $this->redis->del($keys);
+    }
+
+    /**
+     * Get job message from queue.
+     *
+     * @param int $id
+     *
+     * @return mixed
+     */
+    public function get($id)
+    {
+        $payload = $this->redis->hget("{$this->singleChannel}.{$this->topic}.messages", $id);
+
+        if (null === $payload) {
+            return [$id, null];
+        }
+
+        $message = \json_decode($payload, true);
+
+        $serializer = Factory::getInstance($message['serializerType']);
+
+        return [$id, $serializer->unSerialize($message['serializedMessage'])];
+    }
+
+    public function getTopic(): string
+    {
+        return $this->topic;
     }
 }

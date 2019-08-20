@@ -10,22 +10,41 @@
 
 namespace Littlesqx\AintQueue;
 
+use Littlesqx\AintQueue\Exception\RuntimeException;
+use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Symfony\Component\Process\Process;
 
 class SingleWorker implements WorkerInterface
 {
     /**
-     * deliver an task into current worker.
+     * Deliver an task into current worker(blocking).
      *
-     * @param \Closure|JobInterface $task
+     * @param QueueInterface $queue
+     * @param int $messageId
+     * @param \Closure|JobInterface $message
      *
-     * @return mixed
+     * @return mixed|void
+     * @throws RuntimeException
      */
-    public function deliver($task)
+    public function deliver(QueueInterface $queue, $messageId, $message)
     {
-        $process = new Process([]);
+        $entry = EnvironmentHelper::getAppBinary();
+        if (null === $entry) {
+            throw new RuntimeException('Fail to get app entry file.');
+        }
+
+        $cmd = [
+            EnvironmentHelper::getPhpBinary(),
+            $entry,
+            'queue:run',
+            "--id={$messageId}",
+            "--topic={$queue->getTopic()}",
+        ];
+
+        $process = new Process($cmd);
+
         // set timeout
-        if ($task instanceof JobInterface && ($ttr = $task->getTtr()) > 0) {
+        if ($message instanceof JobInterface && ($ttr = $message->getTtr()) > 0) {
             $process->setTimeout($ttr);
         }
 
