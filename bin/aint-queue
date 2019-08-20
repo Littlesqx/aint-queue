@@ -1,0 +1,23 @@
+#!/usr/bin/env php
+<?php
+
+/*
+ * This file is part of the littlesqx/aint-queue.
+ *
+ * (c) littlesqx <littlesqx@gmail.com>
+ *
+ * This source file is subject to the MIT license that is bundled.
+ */
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Symfony\Component\Console\Application;
+use Littlesqx\AintQueue\Console\QueueRunCommand;
+use Littlesqx\AintQueue\Console\QueueListenCommand;
+
+$app = new Application();
+
+$app->addCommands([new QueueRunCommand(), new QueueListenCommand()]);
+$app->setAutoExit(true);
+
+$app->run();
