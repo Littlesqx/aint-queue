@@ -1,18 +1,17 @@
 <?php
 
-/**
- * This file is part of aint-queue.
+/*
+ * This file is part of the littlesqx/aint-queue.
  *
- * Copyright © 2012 - 2019 Xiaoman. All Rights Reserved.
+ * (c) littlesqx <littlesqx@gmail.com>
  *
- * Created by Shengqian <shengqian@xiaoman.cn>, on 2019/08/23.
+ * This source file is subject to the MIT license that is bundled.
  */
 
 namespace Littlesqx\AintQueue\Worker;
 
 use Littlesqx\AintQueue\Helper\SwooleHelper;
 use Littlesqx\AintQueue\Manager;
-use Swoole\Process as SwooleProcess;
 
 class CoroutineWorker extends AbstractWorker
 {
@@ -32,9 +31,7 @@ class CoroutineWorker extends AbstractWorker
         $this->topic = $manager->getQueue()->getTopic();
 
         parent::__construct($manager, function () {
-
             SwooleHelper::setProcessName($this->getName());
-
         }, true);
     }
 
@@ -45,7 +42,7 @@ class CoroutineWorker extends AbstractWorker
      */
     public function getName(): string
     {
-        return 'aint-queue-coroutine-worker' . ":{$this->topic}";
+        return 'aint-queue-coroutine-worker'.":{$this->topic}";
     }
 
     /**
@@ -55,7 +52,6 @@ class CoroutineWorker extends AbstractWorker
      */
     public function getTaskQueueName(): string
     {
-        return 'aint-queue-coroutine-worker:task-queue' . ":{$this->topic}";
+        return 'aint-queue-coroutine-worker:task-queue'.":{$this->topic}";
     }
-
 }

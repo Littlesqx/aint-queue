@@ -45,12 +45,12 @@ class Queue extends AbstractQueue
             $serializedMessage = $this->phpSerializer->serialize($message);
             $serializerType = Factory::SERIALIZER_TYPE_PHP;
         } else {
-            throw new \InvalidArgumentException(gettype($message) . ' type message is not allowed.');
+            throw new \InvalidArgumentException(gettype($message).' type message is not allowed.');
         }
 
         $pushMessage = \json_encode([
             'serializerType' => $serializerType,
-            'serializedMessage' => $serializedMessage
+            'serializedMessage' => $serializedMessage,
         ]);
 
         $id = $this->redis->incr("{$this->channel}.{$this->topic}.message_id");

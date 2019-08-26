@@ -124,7 +124,7 @@ class Manager
             try {
                 $jobDistributor->dispatch($id, $job);
             } catch (\Throwable $t) {
-                $this->getLogger()->error('Job execute error, ' . $t->getMessage());
+                $this->getLogger()->error('Job execute error, '.$t->getMessage());
             }
 
             if ($this->memoryExceeded()) {
@@ -143,6 +143,7 @@ class Manager
     public function memoryExceeded(): bool
     {
         $usage = (memory_get_usage(true) / 1024 / 1024);
+
         return $usage >= $this->getMemoryLimit();
     }
 
@@ -155,12 +156,13 @@ class Manager
     {
         [$id, $job] = $this->queue->get($messageId);
 
-        if ($job === null) {
+        if (null === $job) {
             $this->getLogger()->error('Unresolvable job.', [
                 'driver' => gettype($this->queue),
                 'topic' => $this->queue->getTopic(),
                 'message_id' => $id,
             ]);
+
             return;
         }
 
@@ -169,7 +171,7 @@ class Manager
         } elseif ($job instanceof JobInterface) {
             $job->handle($this->queue);
         } else {
-            $this->getLogger()->error('Not supported job, type: ' . gettype($job) . '.', [
+            $this->getLogger()->error('Not supported job, type: '.gettype($job).'.', [
                 'driver' => gettype($this->queue),
                 'topic' => $this->queue->getTopic(),
                 'message_id' => $id,
@@ -178,7 +180,7 @@ class Manager
     }
 
     /**
-     * Execute job in sub-process. (blocking)
+     * Execute job in sub-process. (blocking).
      *
      * @param $messageId
      *
@@ -200,7 +202,6 @@ class Manager
         ];
 
         $process = new Process($cmd);
-
 
         // set timeout
         $timeout = $options['timeout'] ?? 0;
@@ -259,5 +260,4 @@ class Manager
     {
         return $this->queue;
     }
-
 }

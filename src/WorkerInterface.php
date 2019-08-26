@@ -15,8 +15,8 @@ interface WorkerInterface
     /**
      * deliver an task into current worker.
      *
-     * @param QueueInterface $queue
-     * @param int $messageId
+     * @param QueueInterface        $queue
+     * @param int                   $messageId
      * @param \Closure|JobInterface $message
      *
      * @return mixed

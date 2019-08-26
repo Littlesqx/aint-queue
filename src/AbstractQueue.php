@@ -25,7 +25,6 @@ abstract class AbstractQueue implements QueueInterface
      */
     protected $topic = 'default';
 
-
     /**
      * @var PhpSerializer
      */
@@ -40,7 +39,6 @@ abstract class AbstractQueue implements QueueInterface
      * @var int
      */
     protected $pushDelay = 0;
-
 
     /**
      * @var AbstractQueue[]
@@ -96,5 +94,4 @@ abstract class AbstractQueue implements QueueInterface
 
         return $this;
     }
-
 }

@@ -1,11 +1,11 @@
 <?php
 
-/**
- * This file is part of aint-queue.
+/*
+ * This file is part of the littlesqx/aint-queue.
  *
- * Copyright © 2012 - 2019 Xiaoman. All Rights Reserved.
+ * (c) littlesqx <littlesqx@gmail.com>
  *
- * Created by Shengqian <shengqian@xiaoman.cn>, on 2019/08/26.
+ * This source file is subject to the MIT license that is bundled.
  */
 
 namespace Littlesqx\AintQueue\Worker;
@@ -16,7 +16,6 @@ use Swoole\Process as SwooleProcess;
 
 abstract class AbstractWorker extends SwooleProcess implements WorkerInterface
 {
-
     /**
      * @var Manager
      */
@@ -60,5 +59,4 @@ abstract class AbstractWorker extends SwooleProcess implements WorkerInterface
     {
         $this->redis->lpush($this->getTaskQueueName(), [$messageId]);
     }
-
 }

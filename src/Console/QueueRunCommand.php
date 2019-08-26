@@ -1,11 +1,11 @@
 <?php
 
-/**
- * This file is part of aint-queue.
+/*
+ * This file is part of the littlesqx/aint-queue.
  *
- * Copyright © 2012 - 2019 Xiaoman. All Rights Reserved.
+ * (c) littlesqx <littlesqx@gmail.com>
  *
- * Created by Shengqian <shengqian@xiaoman.cn>, on 2019/08/19.
+ * This source file is subject to the MIT license that is bundled.
  */
 
 namespace Littlesqx\AintQueue\Console;
@@ -23,7 +23,7 @@ class QueueRunCommand extends AbstractCommand
         $this->setDescription('Run a job pop from the queue.')
             ->setHelp('This Command allows you to run a job at the head of the queue.')
             ->addOption('topic', 't', InputOption::VALUE_REQUIRED, 'The topic of queue.', 'default')
-            ->addOption('id', null, InputOption::VALUE_REQUIRED, 'Job\'s ID.'. 'test');
+            ->addOption('id', null, InputOption::VALUE_REQUIRED, 'Job\'s ID.'.'test');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

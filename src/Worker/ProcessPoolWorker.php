@@ -1,11 +1,11 @@
 <?php
 
-/**
- * This file is part of aint-queue.
+/*
+ * This file is part of the littlesqx/aint-queue.
  *
- * Copyright © 2012 - 2019 Xiaoman. All Rights Reserved.
+ * (c) littlesqx <littlesqx@gmail.com>
  *
- * Created by Shengqian <shengqian@xiaoman.cn>, on 2019/08/23.
+ * This source file is subject to the MIT license that is bundled.
  */
 
 namespace Littlesqx\AintQueue\Worker;
@@ -46,7 +46,6 @@ class ProcessPoolWorker extends AbstractWorker
     public function __construct(Manager $manager)
     {
         parent::__construct($manager, function () {
-
             SwooleHelper::setProcessName($this->getName());
 
             $this->initRedis();
@@ -71,9 +70,9 @@ class ProcessPoolWorker extends AbstractWorker
      */
     protected function workerStart(SwooleProcessPool $pool, $workerId)
     {
-        $this->manager->getLogger()->info($this->getName() . ' sub-worker:' . $workerId . ' start.');
+        $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' start.');
 
-        SwooleHelper::setProcessName($this->getName() . ' sub-worker:' . $workerId);
+        SwooleHelper::setProcessName($this->getName().' sub-worker:'.$workerId);
 
         SwooleProcess::signal(SIGTERM, function () {
             $this->canContinue = false;
@@ -95,7 +94,7 @@ class ProcessPoolWorker extends AbstractWorker
      */
     protected function workerStop(SwooleProcessPool $pool, $workerId)
     {
-        $this->manager->getLogger()->info($this->getName() . ' sub-worker:' . $workerId . ' stop.');
+        $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' stop.');
     }
 
     /**
@@ -105,7 +104,7 @@ class ProcessPoolWorker extends AbstractWorker
      */
     public function getName(): string
     {
-        return 'aint-queue-process-pool-worker' . ":{$this->topic}";
+        return 'aint-queue-process-pool-worker'.":{$this->topic}";
     }
 
     /**
@@ -115,6 +114,6 @@ class ProcessPoolWorker extends AbstractWorker
      */
     public function getTaskQueueName(): string
     {
-        return 'aint-queue-process-pool-worker:task-queue' . ":{$this->topic}";
+        return 'aint-queue-process-pool-worker:task-queue'.":{$this->topic}";
     }
 }

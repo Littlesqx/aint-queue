@@ -1,11 +1,11 @@
 <?php
 
-/**
- * This file is part of aint-queue.
+/*
+ * This file is part of the littlesqx/aint-queue.
  *
- * Copyright © 2012 - 2019 Xiaoman. All Rights Reserved.
+ * (c) littlesqx <littlesqx@gmail.com>
  *
- * Created by Shengqian <shengqian@xiaoman.cn>, on 2019/08/23.
+ * This source file is subject to the MIT license that is bundled.
  */
 
 namespace Littlesqx\AintQueue\Worker;
@@ -24,7 +24,6 @@ class ProcessWorker extends AbstractWorker
     public function __construct(Manager $manager)
     {
         parent::__construct($manager, function () {
-
             SwooleHelper::setProcessName($this->getName());
 
             SwooleProcess::signal(SIGTERM, function () {
@@ -49,7 +48,7 @@ class ProcessWorker extends AbstractWorker
      */
     public function getName(): string
     {
-        return 'aint-queue-process-worker' . ":{$this->topic}";
+        return 'aint-queue-process-worker'.":{$this->topic}";
     }
 
     /**
@@ -59,6 +58,6 @@ class ProcessWorker extends AbstractWorker
      */
     public function getTaskQueueName(): string
     {
-        return 'aint-queue-process-worker:task-queue' . ":{$this->topic}";
+        return 'aint-queue-process-worker:task-queue'.":{$this->topic}";
     }
 }
