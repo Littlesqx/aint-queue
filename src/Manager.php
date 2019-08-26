@@ -10,10 +10,13 @@
 
 namespace Littlesqx\AintQueue;
 
+use Littlesqx\AintQueue\Exception\RuntimeException;
+use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
-use Littlesqx\AintQueue\Timer\TimerProcess;
+use Littlesqx\AintQueue\Timer\TickTimerProcess;
 use Psr\Log\LoggerInterface;
-use Swoole\Process;
+use Swoole\Process as SwooleProcess;
+use Symfony\Component\Process\Process;
 
 class Manager
 {
@@ -33,11 +36,11 @@ class Manager
     protected $options;
 
     /**
-     * @var TimerProcess
+     * @var TickTimerProcess
      */
-    protected $timerProcess;
+    protected $tickTimer;
 
-    public function __construct(QueueInterface $driver, array $options)
+    public function __construct(QueueInterface $driver, array $options = [])
     {
         $this->queue = $driver;
         $this->options = $options;
@@ -45,25 +48,25 @@ class Manager
         $this->logger = new DefaultLogger();
     }
 
-    protected function registerSignal()
+    protected function registerSignal(): void
     {
         // force exit
-        Process::signal(SIGTERM, function ($signo) {
+        SwooleProcess::signal(SIGTERM, function ($signo) {
         });
         // force killed
-        Process::signal(SIGKILL, function ($signo) {
+        SwooleProcess::signal(SIGKILL, function ($signo) {
         });
         // custom signal - exit smoothly
-        Process::signal(SIGUSR1, function ($signo) {
+        SwooleProcess::signal(SIGUSR1, function ($signo) {
         });
         // custom signal - record process status
-        Process::signal(SIGUSR2, function ($signo) {
+        SwooleProcess::signal(SIGUSR2, function ($signo) {
         });
     }
 
-    protected function registerTimer()
+    protected function registerTimer(): void
     {
-        $this->timerProcess = new TimerProcess([
+        $this->tickTimer = new TickTimerProcess([
             // move expired job
             new Timer\TickTimer(1000, function () {
                 $this->queue->moveExpired();
@@ -74,7 +77,7 @@ class Manager
             }),
         ]);
 
-        $this->timerProcess->start();
+        $this->tickTimer->start();
     }
 
     /**
@@ -84,7 +87,7 @@ class Manager
      *
      * @return $this
      */
-    public function setLogger(LoggerInterface $logger)
+    public function setLogger(LoggerInterface $logger): self
     {
         $this->logger = $logger;
 
@@ -104,24 +107,30 @@ class Manager
     /**
      * Listen the queue, to distribute job.
      */
-    public function listen()
+    public function listen(): void
     {
         $this->registerSignal();
         $this->registerTimer();
+        $jobDistributor = new JobDistributor($this);
 
         while (true) {
-            echo "waiting... \n";
             [$id, $job] = $this->queue->pop();
 
             if (null === $job) {
                 sleep($this->getSleepTime());
+                continue;
             }
 
-            $this->distributeJob($id, $job);
+            try {
+                $jobDistributor->dispatch($id, $job);
+            } catch (\Throwable $t) {
+                $this->getLogger()->error('Job execute error, ' . $t->getMessage());
+            }
 
             if ($this->memoryExceeded()) {
-                echo "Memory Exceeded \n";
+                $this->getLogger()->info('Memory exceeded, exit smoothly.');
                 $this->waitWorkers();
+                $this->exitMaster();
             }
         }
     }
@@ -138,37 +147,74 @@ class Manager
     }
 
     /**
-     * Distribute jobs to Specific worker.
+     * Execute job in current process.
      *
      * @param $messageId
-     * @param $job
      */
-    public function distributeJob($messageId, $job): void
-    {
-        $worker = new SingleWorker();
-        try {
-            $worker->deliver($this->queue, $messageId, $job);
-        } catch (\Throwable $throwable) {
-            $this->getLogger()->error($throwable->getMessage());
-        }
-    }
-
     public function executeJob($messageId): void
     {
         [$id, $job] = $this->queue->get($messageId);
 
         if ($job === null) {
-            // log
+            $this->getLogger()->error('Unresolvable job.', [
+                'driver' => gettype($this->queue),
+                'topic' => $this->queue->getTopic(),
+                'message_id' => $id,
+            ]);
             return;
         }
 
         if (is_callable($job)) {
-            $job();
+            $job($this->queue);
         } elseif ($job instanceof JobInterface) {
             $job->handle($this->queue);
         } else {
-            // log
+            $this->getLogger()->error('Not supported job, type: ' . gettype($job) . '.', [
+                'driver' => gettype($this->queue),
+                'topic' => $this->queue->getTopic(),
+                'message_id' => $id,
+            ]);
         }
+    }
+
+    /**
+     * Execute job in sub-process. (blocking)
+     *
+     * @param $messageId
+     *
+     * @throws RuntimeException
+     */
+    public function executeJobInSubProcess($messageId): void
+    {
+        $entry = EnvironmentHelper::getAppBinary();
+        if (null === $entry) {
+            throw new RuntimeException('Fail to get app entry file.');
+        }
+
+        $cmd = [
+            EnvironmentHelper::getPhpBinary(),
+            $entry,
+            'queue:run',
+            "--id={$messageId}",
+            "--topic={$this->queue->getTopic()}",
+        ];
+
+        $process = new Process($cmd);
+
+
+        // set timeout
+        $timeout = $options['timeout'] ?? 0;
+        if ($timeout > 0) {
+            $process->setTimeout($timeout);
+        }
+
+        $process->run(function ($type, $buffer) {
+            if (Process::ERR === $type) {
+                fwrite(\STDERR, $buffer);
+            } else {
+                fwrite(\STDOUT, $buffer);
+            }
+        });
     }
 
     /**
@@ -188,7 +234,7 @@ class Manager
      */
     public function getSleepTime(): int
     {
-        return (int) ($this->options['sleep_time'] ?? 0);
+        return (int) max($this->options['sleep_time'] ?? 0, 0);
     }
 
     /**
@@ -196,17 +242,22 @@ class Manager
      */
     public function waitWorkers(): void
     {
-        $this->timerProcess->quit();
+        $this->tickTimer->stop();
     }
 
     public function exitWorkers(): void
     {
-        $this->timerProcess->quit();
+        $this->tickTimer->stop();
     }
 
     public function exitMaster(): void
     {
+        exit(0);
+    }
 
+    public function getQueue(): QueueInterface
+    {
+        return $this->queue;
     }
 
 }

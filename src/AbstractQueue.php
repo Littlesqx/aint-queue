@@ -18,12 +18,7 @@ abstract class AbstractQueue implements QueueInterface
     /**
      * @var string
      */
-    protected $singleChannel = 'aint-queue:single';
-
-    /**
-     * @var string
-     */
-    protected $multipleChannel = 'aint-queue:multiple';
+    protected $channel = 'aint-queue';
 
     /**
      * @var string
@@ -76,33 +71,23 @@ abstract class AbstractQueue implements QueueInterface
     }
 
     /**
-     * Get single channel by channel type.
+     * Get name of the channel.
      *
      * @return string
      */
-    public function getSingleChannel(): string
+    public function getChannel(): string
     {
-        return $this->singleChannel;
-    }
-
-    /**
-     * Get multiple channel by channel type.
-     *
-     * @return string
-     */
-    public function getMultipleChannel(): string
-    {
-        return $this->multipleChannel;
+        return $this->channel;
     }
 
     public function moveExpired(): void
     {
-
+        echo "in move expired\n";
     }
 
     public function checkStatus(): void
     {
-
+        echo "in checkStatus\n";
     }
 
     public function delay(int $delay)

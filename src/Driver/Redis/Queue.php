@@ -23,9 +23,7 @@ class Queue extends AbstractQueue
     {
         parent::__construct($topic);
 
-        $this->redis = new Client(null, [
-            'read_write_timeout' => -1,
-        ]);
+        $this->redis = new Client(['read_write_timeout' => 0]);
     }
 
     /**
@@ -55,15 +53,13 @@ class Queue extends AbstractQueue
             'serializedMessage' => $serializedMessage
         ]);
 
-        $id = $this->redis->incr("{$this->singleChannel}.{$this->topic}.message_id");
-        $this->redis->hset("{$this->singleChannel}.{$this->topic}.messages", $id, $pushMessage);
-
-
+        $id = $this->redis->incr("{$this->channel}.{$this->topic}.message_id");
+        $this->redis->hset("{$this->channel}.{$this->topic}.messages", $id, $pushMessage);
 
         if ($this->pushDelay <= 0) {
-            $this->redis->lpush("{$this->singleChannel}.{$this->topic}.waiting", [$id]);
+            $this->redis->lpush("{$this->channel}.{$this->topic}.waiting", [$id]);
         } else {
-            $this->redis->zadd("{$this->singleChannel}.{$this->topic}.delayed", [$id => time() + $this->pushDelay]);
+            $this->redis->zadd("{$this->channel}.{$this->topic}.delayed", [$id => time() + $this->pushDelay]);
         }
     }
 
@@ -74,7 +70,7 @@ class Queue extends AbstractQueue
      */
     public function pop()
     {
-        $id = $this->redis->blpop(["{$this->singleChannel}.{$this->topic}.waiting"], 0)[1] ?? 0;
+        $id = $this->redis->brpop(["{$this->channel}.{$this->topic}.waiting"], 0)[1] ?? 0;
 
         return $this->get($id);
     }
@@ -110,7 +106,7 @@ class Queue extends AbstractQueue
      */
     public function clear()
     {
-        $keys = $this->redis->keys("{$this->singleChannel}.{$this->topic}.*");
+        $keys = $this->redis->keys("{$this->channel}.{$this->topic}.*");
         $this->redis->del($keys);
     }
 
@@ -123,7 +119,7 @@ class Queue extends AbstractQueue
      */
     public function get($id)
     {
-        $payload = $this->redis->hget("{$this->singleChannel}.{$this->topic}.messages", $id);
+        $payload = $this->redis->hget("{$this->channel}.{$this->topic}.messages", $id);
 
         if (null === $payload) {
             return [$id, null];
