@@ -84,6 +84,6 @@ class TickTimer implements TickTimerInterface
      */
     public function clear(): bool
     {
-        return $this->getId() >= 0 && SwooleTimer::clear($this->id);
+        return $this->getId() > 0 && SwooleTimer::clear($this->id);
     }
 }
