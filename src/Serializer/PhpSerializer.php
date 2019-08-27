@@ -10,6 +10,8 @@
 
 namespace Littlesqx\AintQueue\Serializer;
 
+use Littlesqx\AintQueue\Exception\InvalidArgumentException;
+
 class PhpSerializer implements SerializerInterface
 {
     /**
@@ -18,11 +20,13 @@ class PhpSerializer implements SerializerInterface
      * @param $object
      *
      * @return string
+     *
+     * @throws InvalidArgumentException
      */
     public function serialize($object): string
     {
         if (!is_object($object)) {
-            throw new \InvalidArgumentException('Argument invalid, it must be an object.');
+            throw new InvalidArgumentException('Argument invalid, it must be an object.');
         }
 
         return serialize($object);

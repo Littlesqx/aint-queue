@@ -48,6 +48,9 @@ class Manager
         $this->logger = new DefaultLogger();
     }
 
+    /**
+     * Register signal handler.
+     */
     protected function registerSignal(): void
     {
         // force exit
@@ -64,6 +67,9 @@ class Manager
         });
     }
 
+    /**
+     * Register timer-process.
+     */
     protected function registerTimer(): void
     {
         $this->tickTimer = new TickTimerProcess([
@@ -105,12 +111,22 @@ class Manager
     }
 
     /**
+     * Get current queue instance.
+     *
+     * @return QueueInterface
+     */
+    public function getQueue(): QueueInterface
+    {
+        return $this->queue;
+    }
+
+    /**
      * Listen the queue, to distribute job.
      */
     public function listen(): void
     {
-//        $this->registerSignal();
-//        $this->registerTimer();
+        $this->registerSignal();
+        $this->registerTimer();
 
         $jobDistributor = new JobDistributor($this);
 
@@ -247,18 +263,19 @@ class Manager
         $this->tickTimer->stop();
     }
 
+    /**
+     * Force exit worker.
+     */
     public function exitWorkers(): void
     {
         $this->tickTimer->stop();
     }
 
+    /**
+     * Exit master process.
+     */
     public function exitMaster(): void
     {
         exit(0);
-    }
-
-    public function getQueue(): QueueInterface
-    {
-        return $this->queue;
     }
 }

@@ -10,10 +10,10 @@
 
 namespace Littlesqx\AintQueue\Test;
 
-use Littlesqx\AintQueue\JobInterface;
 use Littlesqx\AintQueue\QueueInterface;
+use Littlesqx\AintQueue\SyncJobInterface;
 
-class Job implements JobInterface
+class SyncJob implements SyncJobInterface
 {
     /**
      * Execute current job.
@@ -21,10 +21,15 @@ class Job implements JobInterface
      * @param QueueInterface $queue
      *
      * @return mixed
+     *
+     * @throws \Exception
      */
     public function handle(QueueInterface $queue)
     {
-        // TODO: Implement handle() method.
+        $int = random_int(1, 5);
+        echo "sync job sleep#{$int} begin \n";
+        sleep($int);
+        echo "sync job sleep#{$int} end \n";
     }
 
     /**
@@ -34,7 +39,7 @@ class Job implements JobInterface
      */
     public function getTtr(): int
     {
-        // TODO: Implement getTtr() method.
+        return 30;
     }
 
     /**
@@ -47,6 +52,6 @@ class Job implements JobInterface
      */
     public function canRetry(int $attempt, $error): bool
     {
-        // TODO: Implement canRetry() method.
+        return false;
     }
 }

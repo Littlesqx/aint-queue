@@ -17,13 +17,15 @@ use Psr\Log\LoggerInterface;
 
 class DefaultLogger implements LoggerInterface
 {
-    /** @var Logger */
+    /**
+     * @var Logger
+     */
     protected $executor;
 
     public function __construct()
     {
         $this->executor = new Logger('anit-queue-default');
-        $handler = new StreamHandler('/tmp/anit-queue.log');
+        $handler = new StreamHandler('/tmp/aint-queue.log');
         $handler->setFormatter(new LineFormatter());
         $this->executor->setHandlers([$handler]);
     }

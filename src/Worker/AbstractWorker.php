@@ -32,6 +32,11 @@ abstract class AbstractWorker extends SwooleProcess implements WorkerInterface
      */
     protected $topic;
 
+    /**
+     * @var bool
+     */
+    protected $canContinue = true;
+
     public function __construct(Manager $manager, \Closure $closure, $enableCoroutine = null)
     {
         $this->manager = $manager;

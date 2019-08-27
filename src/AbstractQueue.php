@@ -78,14 +78,20 @@ abstract class AbstractQueue implements QueueInterface
         return $this->channel;
     }
 
+    /**
+     * Moved the expired job to waiting queue.
+     */
     public function moveExpired(): void
     {
-        echo "in move expired\n";
+        // TODO
     }
 
+    /**
+     * Check jobs' execution, you can register some status reporter.
+     */
     public function checkStatus(): void
     {
-        echo "in checkStatus\n";
+        // TODO
     }
 
     public function delay(int $delay)

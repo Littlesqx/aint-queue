@@ -16,26 +16,8 @@ use Swoole\Runtime;
 
 class CoroutineWorker extends AbstractWorker
 {
-    /**
-     * @var Manager
-     */
-    protected $manager;
-
-    /**
-     * @var string
-     */
-    protected $topic;
-
-    /**
-     * @var bool
-     */
-    protected $canContinue = true;
-
     public function __construct(Manager $manager)
     {
-        $this->manager = $manager;
-        $this->topic = $manager->getQueue()->getTopic();
-
         parent::__construct($manager, function () {
             // required
             Runtime::enableCoroutine(true);

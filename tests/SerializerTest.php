@@ -10,6 +10,7 @@
 
 namespace Tests;
 
+use Littlesqx\AintQueue\Exception\InvalidArgumentException;
 use Littlesqx\AintQueue\Serializer\ClosureSerializer;
 use Littlesqx\AintQueue\Serializer\PhpSerializer;
 use PHPUnit\Framework\TestCase;
@@ -22,15 +23,15 @@ class SerializerTest extends TestCase
     public function php_serializer_can_throw_exception_when_serialize_not_object()
     {
         $serializer = new PhpSerializer();
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $serializer->serialize(1);
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $serializer->serialize(false);
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $serializer->serialize([]);
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $serializer->serialize('string');
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $serializer->serialize(function () {});
     }
 
@@ -59,15 +60,15 @@ class SerializerTest extends TestCase
     public function closure_serializer_can_throw_exception_when_serialize_not_closure()
     {
         $serializer = new ClosureSerializer();
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $serializer->serialize(1);
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $serializer->serialize(false);
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $serializer->serialize([]);
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $serializer->serialize('string');
-        $this->expectException(\InvalidArgumentException::class);
+        $this->expectException(InvalidArgumentException::class);
         $serializer->serialize(new \stdClass());
     }
 

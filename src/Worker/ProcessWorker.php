@@ -15,11 +15,6 @@ use Swoole\Process as SwooleProcess;
 
 class ProcessWorker extends AbstractWorker
 {
-    /**
-     * @var bool
-     */
-    protected $canContinue = true;
-
     public function __construct(Manager $manager)
     {
         parent::__construct($manager, function () {

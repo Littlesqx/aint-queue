@@ -10,6 +10,7 @@
 
 namespace Littlesqx\AintQueue\Serializer;
 
+use Littlesqx\AintQueue\Exception\InvalidArgumentException;
 use SuperClosure\Serializer as SuperClosureSerializer;
 
 class ClosureSerializer implements SerializerInterface
@@ -27,11 +28,13 @@ class ClosureSerializer implements SerializerInterface
      * @param $closure
      *
      * @return string
+     *
+     * @throws InvalidArgumentException
      */
     public function serialize($closure): string
     {
         if (!is_callable($closure)) {
-            throw new \InvalidArgumentException('Argument invalid, it must be callable.');
+            throw new InvalidArgumentException('Argument invalid, it must be callable.');
         }
 
         return $this->executor->serialize($closure);

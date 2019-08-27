@@ -12,36 +12,15 @@ namespace Littlesqx\AintQueue\Worker;
 
 use Littlesqx\AintQueue\Helper\SwooleHelper;
 use Littlesqx\AintQueue\Manager;
-use Predis\Client;
 use Swoole\Process as SwooleProcess;
 use Swoole\Process\Pool as SwooleProcessPool;
 
 class ProcessPoolWorker extends AbstractWorker
 {
     /**
-     * @var SwooleProcess[]
-     */
-    protected $process = [];
-
-    /**
      * @var SwooleProcessPool
      */
     protected $processPool;
-
-    /**
-     * @var Client
-     */
-    protected $redis;
-
-    /**
-     * @var bool
-     */
-    protected $canContinue = true;
-
-    /**
-     * @var Manager
-     */
-    protected $manager;
 
     public function __construct(Manager $manager)
     {

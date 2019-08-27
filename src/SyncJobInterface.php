@@ -10,16 +10,14 @@
 
 namespace Littlesqx\AintQueue;
 
-interface JobInterface
+interface SyncJobInterface extends JobInterface
 {
     /**
-     * Execute current job.
+     * Get current job's max execution time(seconds).
      *
-     * @param QueueInterface $queue
-     *
-     * @return mixed
+     * @return int
      */
-    public function handle(QueueInterface $queue);
+    public function getTtr(): int;
 
     /**
      * Determine whether current job can retry if fail.

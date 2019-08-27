@@ -12,6 +12,7 @@ namespace Littlesqx\AintQueue\Test;
 
 use Littlesqx\AintQueue\CoJobInterface;
 use Littlesqx\AintQueue\QueueInterface;
+use Swoole\Coroutine;
 
 class CoJob implements CoJobInterface
 {
@@ -20,24 +21,16 @@ class CoJob implements CoJobInterface
      *
      * @param QueueInterface $queue
      *
-     * @return mixed
+     * @return mixed|void
+     *
+     * @throws \Exception
      */
     public function handle(QueueInterface $queue)
     {
         $int = random_int(1, 10);
-        echo "coroutine sleep#{$int} begin \n";
-        \Swoole\Coroutine::sleep($int);
-        echo "coroutine sleep#{$int} end \n";
-    }
-
-    /**
-     * Get current job's max execution time(seconds).
-     *
-     * @return int
-     */
-    public function getTtr(): int
-    {
-        return 0;
+        echo "coroutine job sleep#{$int} begin \n";
+        Coroutine::sleep($int);
+        echo "coroutine job sleep#{$int} end \n";
     }
 
     /**

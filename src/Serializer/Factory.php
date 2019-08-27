@@ -10,6 +10,8 @@
 
 namespace Littlesqx\AintQueue\Serializer;
 
+use Littlesqx\AintQueue\Exception\InvalidArgumentException;
+
 class Factory
 {
     /**
@@ -22,7 +24,9 @@ class Factory
      */
     const SERIALIZER_TYPE_CLOSURE = 'closure_serializer';
 
-    /** @var SerializerInterface[] */
+    /**
+     * @var SerializerInterface[]
+     */
     public static $instances = [];
 
     /**
@@ -31,11 +35,13 @@ class Factory
      * @param string $type
      *
      * @return SerializerInterface
+     *
+     * @throws InvalidArgumentException
      */
     public static function getInstance(string $type): SerializerInterface
     {
         if (!in_array($type, [self::SERIALIZER_TYPE_PHP, self::SERIALIZER_TYPE_CLOSURE], true)) {
-            throw new \InvalidArgumentException("The arg type: {$type} is invalid.");
+            throw new InvalidArgumentException("The arg type: {$type} is invalid.");
         }
         if (!isset(self::$instances[$type])) {
             self::$instances[$type] = self::make($type);

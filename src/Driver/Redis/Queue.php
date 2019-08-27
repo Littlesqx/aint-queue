@@ -11,6 +11,7 @@
 namespace Littlesqx\AintQueue\Driver\Redis;
 
 use Littlesqx\AintQueue\AbstractQueue;
+use Littlesqx\AintQueue\Exception\InvalidArgumentException;
 use Littlesqx\AintQueue\JobInterface;
 use Littlesqx\AintQueue\Serializer\Factory;
 use Predis\Client;
@@ -32,6 +33,8 @@ class Queue extends AbstractQueue
      * @param $message
      *
      * @return mixed
+     *
+     * @throws InvalidArgumentException
      */
     public function push($message): void
     {
@@ -45,7 +48,7 @@ class Queue extends AbstractQueue
             $serializedMessage = $this->phpSerializer->serialize($message);
             $serializerType = Factory::SERIALIZER_TYPE_PHP;
         } else {
-            throw new \InvalidArgumentException(gettype($message).' type message is not allowed.');
+            throw new InvalidArgumentException(gettype($message).' type message is not allowed.');
         }
 
         $pushMessage = \json_encode([
@@ -67,6 +70,8 @@ class Queue extends AbstractQueue
      * Pop an job message from queue.
      *
      * @return mixed
+     *
+     * @throws InvalidArgumentException
      */
     public function pop()
     {
@@ -116,6 +121,8 @@ class Queue extends AbstractQueue
      * @param int $id
      *
      * @return mixed
+     *
+     * @throws InvalidArgumentException
      */
     public function get($id)
     {

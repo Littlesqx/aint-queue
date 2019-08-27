@@ -21,20 +21,15 @@ class AsyncJob implements AsyncJobInterface
      * @param QueueInterface $queue
      *
      * @return mixed
+     *
+     * @throws \Exception
      */
     public function handle(QueueInterface $queue)
     {
-        // TODO: Implement handle() method.
-    }
-
-    /**
-     * Get current job's max execution time(seconds).
-     *
-     * @return int
-     */
-    public function getTtr(): int
-    {
-        // TODO: Implement getTtr() method.
+        $int = random_int(1, 5);
+        echo "async job sleep#{$int} begin \n";
+        sleep($int);
+        echo "async job sleep#{$int} end \n";
     }
 
     /**
@@ -47,6 +42,6 @@ class AsyncJob implements AsyncJobInterface
      */
     public function canRetry(int $attempt, $error): bool
     {
-        // TODO: Implement canRetry() method.
+        return false;
     }
 }
