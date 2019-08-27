@@ -10,7 +10,7 @@
 
 namespace Littlesqx\AintQueue\Serializer;
 
-class PhpSerializer implements Serializer
+class PhpSerializer implements SerializerInterface
 {
     /**
      * Serialize an object to string.

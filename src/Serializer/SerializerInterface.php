@@ -10,7 +10,7 @@
 
 namespace Littlesqx\AintQueue\Serializer;
 
-interface Serializer
+interface SerializerInterface
 {
     /**
      * Serialize an object to string.

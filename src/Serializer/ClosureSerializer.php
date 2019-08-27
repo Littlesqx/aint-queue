@@ -12,7 +12,7 @@ namespace Littlesqx\AintQueue\Serializer;
 
 use SuperClosure\Serializer as SuperClosureSerializer;
 
-class ClosureSerializer implements Serializer
+class ClosureSerializer implements SerializerInterface
 {
     protected $executor;
 
