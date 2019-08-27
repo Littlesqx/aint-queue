@@ -10,6 +10,7 @@
 
 namespace Littlesqx\AintQueue\Worker;
 
+use Littlesqx\AintQueue\Helper\SwooleHelper;
 use Littlesqx\AintQueue\Manager;
 use Predis\Client;
 use Swoole\Process as SwooleProcess;
@@ -37,7 +38,12 @@ abstract class AbstractWorker extends SwooleProcess implements WorkerInterface
 
         $this->topic = $manager->getQueue()->getTopic();
 
+        // set process name
+        SwooleHelper::setProcessName($this->getName());
+
         $this->initRedis();
+
+        $this->manager->getLogger()->info($this->getName().' start.');
 
         parent::__construct($closure, null, null, $enableCoroutine);
     }

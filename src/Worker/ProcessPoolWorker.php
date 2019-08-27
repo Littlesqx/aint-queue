@@ -46,8 +46,6 @@ class ProcessPoolWorker extends AbstractWorker
     public function __construct(Manager $manager)
     {
         parent::__construct($manager, function () {
-            SwooleHelper::setProcessName($this->getName());
-
             $this->initRedis();
 
             $this->processPool = new SwooleProcessPool(4);

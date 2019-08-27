@@ -109,8 +109,9 @@ class Manager
      */
     public function listen(): void
     {
-        $this->registerSignal();
-        $this->registerTimer();
+//        $this->registerSignal();
+//        $this->registerTimer();
+
         $jobDistributor = new JobDistributor($this);
 
         while (true) {

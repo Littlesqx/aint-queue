@@ -10,7 +10,6 @@
 
 namespace Littlesqx\AintQueue\Worker;
 
-use Littlesqx\AintQueue\Helper\SwooleHelper;
 use Littlesqx\AintQueue\Manager;
 use Swoole\Process as SwooleProcess;
 
@@ -24,8 +23,6 @@ class ProcessWorker extends AbstractWorker
     public function __construct(Manager $manager)
     {
         parent::__construct($manager, function () {
-            SwooleHelper::setProcessName($this->getName());
-
             SwooleProcess::signal(SIGTERM, function () {
                 $this->canContinue = false;
             });
@@ -34,9 +31,7 @@ class ProcessWorker extends AbstractWorker
 
             while ($this->canContinue) {
                 $messageId = $this->redis->brpop([$this->getTaskQueueName()], 0)[1] ?? 0;
-                echo "exec $messageId start\n";
                 $this->manager->executeJobInSubProcess($messageId);
-                echo "exec $messageId end\n";
             }
         });
     }

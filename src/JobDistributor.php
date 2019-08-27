@@ -33,12 +33,12 @@ class JobDistributor
 
     public function __construct(Manager $manager)
     {
-        echo '__construct, '.getmypid()."\n";
         $this->processWorker = new ProcessWorker($manager);
         $this->processWorker->start();
         $this->processPoolWorker = new ProcessPoolWorker($manager);
         $this->processPoolWorker->start();
         $this->coroutineWorker = new CoroutineWorker($manager);
+        $this->coroutineWorker->start();
     }
 
     /**

@@ -10,8 +10,9 @@
 
 namespace Littlesqx\AintQueue\Worker;
 
-use Littlesqx\AintQueue\Helper\SwooleHelper;
 use Littlesqx\AintQueue\Manager;
+use Swoole\Coroutine;
+use Swoole\Runtime;
 
 class CoroutineWorker extends AbstractWorker
 {
@@ -25,13 +26,26 @@ class CoroutineWorker extends AbstractWorker
      */
     protected $topic;
 
+    /**
+     * @var bool
+     */
+    protected $canContinue = true;
+
     public function __construct(Manager $manager)
     {
         $this->manager = $manager;
         $this->topic = $manager->getQueue()->getTopic();
 
         parent::__construct($manager, function () {
-            SwooleHelper::setProcessName($this->getName());
+            // required
+            Runtime::enableCoroutine(true);
+
+            $this->initRedis();
+
+            while ($this->canContinue) {
+                $messageId = $this->redis->brpop([$this->getTaskQueueName()], 0)[1] ?? 0;
+                Coroutine::create([$this->manager, 'executeJob'], $messageId);
+            }
         }, true);
     }
 
