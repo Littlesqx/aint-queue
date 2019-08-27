@@ -139,8 +139,14 @@ class Queue extends AbstractQueue
         return [$id, $serializer->unSerialize($message['serializedMessage'])];
     }
 
+    /**
+     * Get topic name of current queue.
+     *
+     * @return string
+     */
     public function getTopic(): string
     {
         return $this->topic;
     }
+
 }

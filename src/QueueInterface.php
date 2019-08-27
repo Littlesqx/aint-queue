@@ -62,5 +62,10 @@ interface QueueInterface
      */
     public function get($id);
 
+    /**
+     * Get topic name of current queue.
+     *
+     * @return string
+     */
     public function getTopic(): string;
 }
