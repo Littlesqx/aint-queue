@@ -14,10 +14,17 @@ require __DIR__ . '/../vendor/autoload.php';
 use Symfony\Component\Console\Application;
 use Littlesqx\AintQueue\Console\QueueRunCommand;
 use Littlesqx\AintQueue\Console\QueueListenCommand;
+use Littlesqx\AintQueue\Console\QueueStatusCommand;
+use Littlesqx\AintQueue\Console\QueueClearCommand;
 
 $app = new Application();
 
-$app->addCommands([new QueueRunCommand(), new QueueListenCommand()]);
+$app->addCommands([
+    new QueueRunCommand(),
+    new QueueListenCommand(),
+    new QueueStatusCommand(),
+    new QueueClearCommand(),
+]);
 $app->setAutoExit(true);
 
 $app->run();

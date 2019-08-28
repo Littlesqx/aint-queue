@@ -143,9 +143,10 @@ class Queue extends AbstractQueue
      * @param $id
      *
      * @return mixed
+     *
      * @throws InvalidArgumentException
      */
-    public function status($id)
+    public function getStatus($id)
     {
         if (!is_numeric($id) || $id <= 0) {
             throw new InvalidArgumentException("Invalid message ID: $id.");
@@ -226,37 +227,39 @@ class Queue extends AbstractQueue
     }
 
     /**
-     *
      * @param int $id of a job message
      *
      * @return bool
+     *
      * @throws InvalidArgumentException
      */
     public function isWaiting(int $id): bool
     {
-        return $this->status($id) === self::STATUS_WAITING;
+        return self::STATUS_WAITING === $this->getStatus($id);
     }
 
     /**
      * @param int $id of a job message
      *
      * @return bool
+     *
      * @throws InvalidArgumentException
      */
     public function isReserved(int $id): bool
     {
-        return $this->status($id) === self::STATUS_RESERVED;
+        return self::STATUS_RESERVED === $this->getStatus($id);
     }
 
     /**
      * @param int $id of a job message
      *
      * @return bool
+     *
      * @throws InvalidArgumentException
      */
     public function isDone(int $id): bool
     {
-        return $this->status($id) === self::STATUS_DONE;
+        return self::STATUS_DONE === $this->getStatus($id);
     }
 
     /**
@@ -273,4 +276,19 @@ class Queue extends AbstractQueue
         );
     }
 
+    /**
+     * Get status of current queue.
+     *
+     * @return array
+     */
+    public function status(): array
+    {
+        $waiting = $this->redis->llen("{$this->channel}.{$this->topic}.waiting");
+        $delayed = $this->redis->zcount("{$this->channel}.{$this->topic}.delayed", '-inf', '+inf');
+        $reserved = $this->redis->hlen("{$this->channel}.{$this->topic}.reserved");
+        $total = $this->redis->get("{$this->channel}.{$this->topic}.message_id") ?? 0;
+        $done = $total - $waiting - $delayed - $reserved;
+
+        return [$waiting, $delayed, $reserved, $done, $total];
+    }
 }

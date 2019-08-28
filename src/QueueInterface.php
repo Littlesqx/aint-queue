@@ -27,6 +27,7 @@ interface QueueInterface
      * @param int $id
      *
      * @return mixed
+     *
      * @throws InvalidArgumentException
      */
     public function get($id);
@@ -38,7 +39,7 @@ interface QueueInterface
      *
      * @return mixed
      */
-    public function status($id);
+    public function getStatus($id);
 
     /**
      * Push an executable job message into queue.
@@ -86,4 +87,11 @@ interface QueueInterface
      * @return mixed
      */
     public function clear();
+
+    /**
+     * Get status of current queue.
+     *
+     * @return array
+     */
+    public function status(): array;
 }

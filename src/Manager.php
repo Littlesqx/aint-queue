@@ -174,7 +174,6 @@ class Manager
         $id = $attempts = $job = null;
 
         try {
-
             [$id, $attempts, $job] = $this->queue->get($messageId);
 
             if (null === $job) {
@@ -183,13 +182,16 @@ class Manager
                     'topic' => $this->queue->getTopic(),
                     'message_id' => $id,
                 ]);
+
                 return;
             }
 
             if (is_callable($job)) {
                 $job($this->queue);
+                $this->queue->remove($id);
             } elseif ($job instanceof JobInterface) {
                 $job->handle($this->queue);
+                $this->queue->remove($id);
             } else {
                 $type = is_object($job) ? get_class($job) : gettype($job);
                 $this->getLogger()->error('Not supported job, type: '.$type.'.', [
@@ -198,12 +200,16 @@ class Manager
                     'message_id' => $id,
                 ]);
             }
-            $this->queue->remove($id);
         } catch (\Throwable $t) {
             if ($job instanceof JobInterface && $job->canRetry($attempts, $t)) {
                 $delay = max($job->getNextRetryTime($attempts) - time(), 0);
                 $this->queue->release($id, $delay);
             }
+            $this->getLogger()->error(get_class($t).': '.$t->getMessage(), [
+                'driver' => get_class($this->queue),
+                'topic' => $this->queue->getTopic(),
+                'message_id' => $id,
+            ]);
         }
     }
 
