@@ -57,7 +57,7 @@ abstract class AbstractQueue implements QueueInterface
      *
      * @param string $topic
      *
-     * @return QueueInterface
+     * @return QueueInterface|AbstractQueue
      */
     public static function getInstance(string $topic): QueueInterface
     {
@@ -81,10 +81,7 @@ abstract class AbstractQueue implements QueueInterface
     /**
      * Moved the expired job to waiting queue.
      */
-    public function moveExpired(): void
-    {
-        // TODO
-    }
+    abstract public function migrateExpired(): void;
 
     /**
      * Check jobs' execution, you can register some status reporter.
@@ -94,6 +91,13 @@ abstract class AbstractQueue implements QueueInterface
         // TODO
     }
 
+    /**
+     * Delay to execute the job.
+     *
+     * @param int $delay
+     *
+     * @return $this
+     */
     public function delay(int $delay)
     {
         $this->pushDelay = $delay;

@@ -26,7 +26,7 @@ class ProcessWorker extends AbstractWorker
 
             while ($this->canContinue) {
                 $messageId = $this->redis->brpop([$this->getTaskQueueName()], 0)[1] ?? 0;
-                $this->manager->executeJobInSubProcess($messageId);
+                $this->manager->executeJobInProcess($messageId);
             }
         });
     }

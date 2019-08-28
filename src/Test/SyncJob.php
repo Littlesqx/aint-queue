@@ -54,4 +54,16 @@ class SyncJob implements SyncJobInterface
     {
         return false;
     }
+
+    /**
+     * Get current job's next execution unix time after failed.
+     *
+     * @param int $attempt
+     *
+     * @return int
+     */
+    public function getNextRetryTime(int $attempt): int
+    {
+        // TODO: Implement getNextRetryTime() method.
+    }
 }

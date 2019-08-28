@@ -30,4 +30,13 @@ interface JobInterface
      * @return bool
      */
     public function canRetry(int $attempt, $error): bool;
+
+    /**
+     * Get current job's next execution unix time after failed.
+     *
+     * @param int $attempt
+     *
+     * @return int
+     */
+    public function getNextRetryTime(int $attempt): int;
 }

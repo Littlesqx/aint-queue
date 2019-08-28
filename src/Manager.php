@@ -10,6 +10,7 @@
 
 namespace Littlesqx\AintQueue;
 
+use Littlesqx\AintQueue\Driver\Redis\Queue;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
@@ -26,7 +27,7 @@ class Manager
     protected $logger;
 
     /**
-     * @var QueueInterface|AbstractQueue
+     * @var QueueInterface|AbstractQueue|Queue
      */
     protected $queue;
 
@@ -75,7 +76,7 @@ class Manager
         $this->tickTimer = new TickTimerProcess([
             // move expired job
             new Timer\TickTimer(1000, function () {
-                $this->queue->moveExpired();
+                $this->queue->migrateExpired();
             }),
             // check queue status
             new Timer\TickTimer(1000 * 60 * 5, function () {
@@ -131,14 +132,13 @@ class Manager
         $jobDistributor = new JobDistributor($this);
 
         while (true) {
-            [$id, $job] = $this->queue->pop();
-
-            if (null === $job) {
-                sleep($this->getSleepTime());
-                continue;
-            }
-
             try {
+                [$id, $attemps, $job] = $this->queue->pop();
+
+                if (null === $job) {
+                    sleep($this->getSleepTime());
+                    continue;
+                }
                 $jobDistributor->dispatch($id, $job);
             } catch (\Throwable $t) {
                 $this->getLogger()->error('Job execute error, '.$t->getMessage());
@@ -171,39 +171,50 @@ class Manager
      */
     public function executeJob($messageId): void
     {
-        [$id, $job] = $this->queue->get($messageId);
+        $id = $attempts = $job = null;
 
-        if (null === $job) {
-            $this->getLogger()->error('Unresolvable job.', [
-                'driver' => gettype($this->queue),
-                'topic' => $this->queue->getTopic(),
-                'message_id' => $id,
-            ]);
+        try {
 
-            return;
-        }
+            [$id, $attempts, $job] = $this->queue->get($messageId);
 
-        if (is_callable($job)) {
-            $job($this->queue);
-        } elseif ($job instanceof JobInterface) {
-            $job->handle($this->queue);
-        } else {
-            $this->getLogger()->error('Not supported job, type: '.gettype($job).'.', [
-                'driver' => gettype($this->queue),
-                'topic' => $this->queue->getTopic(),
-                'message_id' => $id,
-            ]);
+            if (null === $job) {
+                $this->getLogger()->error('Unresolvable job.', [
+                    'driver' => get_class($this->queue),
+                    'topic' => $this->queue->getTopic(),
+                    'message_id' => $id,
+                ]);
+                return;
+            }
+
+            if (is_callable($job)) {
+                $job($this->queue);
+            } elseif ($job instanceof JobInterface) {
+                $job->handle($this->queue);
+            } else {
+                $type = is_object($job) ? get_class($job) : gettype($job);
+                $this->getLogger()->error('Not supported job, type: '.$type.'.', [
+                    'driver' => get_class($this->queue),
+                    'topic' => $this->queue->getTopic(),
+                    'message_id' => $id,
+                ]);
+            }
+            $this->queue->remove($id);
+        } catch (\Throwable $t) {
+            if ($job instanceof JobInterface && $job->canRetry($attempts, $t)) {
+                $delay = max($job->getNextRetryTime($attempts) - time(), 0);
+                $this->queue->release($id, $delay);
+            }
         }
     }
 
     /**
-     * Execute job in sub-process. (blocking).
+     * Execute job in a new process. (blocking).
      *
      * @param $messageId
      *
      * @throws RuntimeException
      */
-    public function executeJobInSubProcess($messageId): void
+    public function executeJobInProcess($messageId): void
     {
         $entry = EnvironmentHelper::getAppBinary();
         if (null === $entry) {

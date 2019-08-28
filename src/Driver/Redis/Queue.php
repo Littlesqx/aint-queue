@@ -18,6 +18,19 @@ use Predis\Client;
 
 class Queue extends AbstractQueue
 {
+    /**
+     * @see Queue::isWaiting()
+     */
+    const STATUS_WAITING = 1;
+    /**
+     * @see Queue::isReserved()
+     */
+    const STATUS_RESERVED = 2;
+    /**
+     * @see Queue::isDone()
+     */
+    const STATUS_DONE = 3;
+
     protected $redis;
 
     public function __construct(string $topic)
@@ -48,7 +61,8 @@ class Queue extends AbstractQueue
             $serializedMessage = $this->phpSerializer->serialize($message);
             $serializerType = Factory::SERIALIZER_TYPE_PHP;
         } else {
-            throw new InvalidArgumentException(gettype($message).' type message is not allowed.');
+            $type = is_object($message) ? get_class($message) : gettype($message);
+            throw new InvalidArgumentException($type.' type message is not allowed.');
         }
 
         $pushMessage = \json_encode([
@@ -59,10 +73,10 @@ class Queue extends AbstractQueue
         $id = $this->redis->incr("{$this->channel}.{$this->topic}.message_id");
         $this->redis->hset("{$this->channel}.{$this->topic}.messages", $id, $pushMessage);
 
-        if ($this->pushDelay <= 0) {
-            $this->redis->lpush("{$this->channel}.{$this->topic}.waiting", [$id]);
-        } else {
+        if ($this->pushDelay > 0) {
             $this->redis->zadd("{$this->channel}.{$this->topic}.delayed", [$id => time() + $this->pushDelay]);
+        } else {
+            $this->redis->lpush("{$this->channel}.{$this->topic}.waiting", [$id]);
         }
     }
 
@@ -77,11 +91,20 @@ class Queue extends AbstractQueue
     {
         $id = $this->redis->brpop(["{$this->channel}.{$this->topic}.waiting"], 0)[1] ?? 0;
 
+        // reserved: {id} => attempts
+        $this->redis->eval(
+            LuaScripts::reserve(),
+            2,
+            "{$this->channel}.{$this->topic}.reserved",
+            "{$this->channel}.{$this->topic}.attempts",
+            $id
+        );
+
         return $this->get($id);
     }
 
     /**
-     * Remove specific job from current queue.
+     * Remove specific finished job from current queue.
      *
      * @param $id
      *
@@ -89,7 +112,29 @@ class Queue extends AbstractQueue
      */
     public function remove($id)
     {
-        // TODO: Implement remove() method.
+        $this->redis->hdel("$this->channel.{$this->topic}.reserved", $id);
+        $this->redis->hdel("$this->channel.{$this->topic}.attempts", $id);
+        $this->redis->hdel("$this->channel.{$this->topic}.messages", $id);
+    }
+
+    /**
+     * Release a job which was failed to execute.
+     *
+     * @param $id
+     * @param int $delay
+     *
+     * @return bool
+     */
+    public function release($id, int $delay = 0)
+    {
+        return $this->redis->eval(
+            LuaScripts::release(),
+            2,
+            "{$this->channel}.{$this->topic}.delayed",
+            "{$this->channel}.{$this->topic}.reserved",
+            $id,
+            time() + $delay
+        );
     }
 
     /**
@@ -98,10 +143,23 @@ class Queue extends AbstractQueue
      * @param $id
      *
      * @return mixed
+     * @throws InvalidArgumentException
      */
     public function status($id)
     {
-        // TODO: Implement status() method.
+        if (!is_numeric($id) || $id <= 0) {
+            throw new InvalidArgumentException("Invalid message ID: $id.");
+        }
+
+        if ($this->redis->hexists("$this->channel.reserved", $id)) {
+            return self::STATUS_RESERVED;
+        }
+
+        if ($this->redis->hexists("$this->channel.messages", $id)) {
+            return self::STATUS_WAITING;
+        }
+
+        return self::STATUS_DONE;
     }
 
     /**
@@ -126,17 +184,19 @@ class Queue extends AbstractQueue
      */
     public function get($id)
     {
+        $attempts = $this->redis->hget("{$this->channel}.{$this->topic}.attempts", $id);
+
         $payload = $this->redis->hget("{$this->channel}.{$this->topic}.messages", $id);
 
         if (null === $payload) {
-            return [$id, null];
+            return [$id, 0, null];
         }
 
         $message = \json_decode($payload, true);
 
         $serializer = Factory::getInstance($message['serializerType']);
 
-        return [$id, $serializer->unSerialize($message['serializedMessage'])];
+        return [$id, $attempts, $serializer->unSerialize($message['serializedMessage'])];
     }
 
     /**
@@ -147,6 +207,70 @@ class Queue extends AbstractQueue
     public function getTopic(): string
     {
         return $this->topic;
+    }
+
+    /**
+     * Get current queue's size.
+     *
+     * @return int
+     */
+    public function size(): int
+    {
+        return $this->redis->eval(
+            LuaScripts::size(),
+            3,
+            "{$this->channel}.{$this->topic}.waiting",
+            "{$this->channel}.{$this->topic}.delayed",
+            "{$this->channel}.{$this->topic}.reserved"
+        );
+    }
+
+    /**
+     *
+     * @param int $id of a job message
+     *
+     * @return bool
+     * @throws InvalidArgumentException
+     */
+    public function isWaiting(int $id): bool
+    {
+        return $this->status($id) === self::STATUS_WAITING;
+    }
+
+    /**
+     * @param int $id of a job message
+     *
+     * @return bool
+     * @throws InvalidArgumentException
+     */
+    public function isReserved(int $id): bool
+    {
+        return $this->status($id) === self::STATUS_RESERVED;
+    }
+
+    /**
+     * @param int $id of a job message
+     *
+     * @return bool
+     * @throws InvalidArgumentException
+     */
+    public function isDone(int $id): bool
+    {
+        return $this->status($id) === self::STATUS_DONE;
+    }
+
+    /**
+     * Migrate the expired job to waiting queue.
+     */
+    public function migrateExpired(): void
+    {
+        $this->redis->eval(
+            LuaScripts::migrateExpiredJobs(),
+            2,
+            "{$this->channel}.{$this->topic}.delayed",
+            "{$this->channel}.{$this->topic}.waiting",
+            time()
+        );
     }
 
 }

@@ -10,8 +10,36 @@
 
 namespace Littlesqx\AintQueue;
 
+use Littlesqx\AintQueue\Exception\InvalidArgumentException;
+
 interface QueueInterface
 {
+    /**
+     * Get topic name of current queue.
+     *
+     * @return string
+     */
+    public function getTopic(): string;
+
+    /**
+     * Get job message from queue.
+     *
+     * @param int $id
+     *
+     * @return mixed
+     * @throws InvalidArgumentException
+     */
+    public function get($id);
+
+    /**
+     * Get status of specific job.
+     *
+     * @param $id
+     *
+     * @return mixed
+     */
+    public function status($id);
+
     /**
      * Push an executable job message into queue.
      *
@@ -38,13 +66,19 @@ interface QueueInterface
     public function remove($id);
 
     /**
-     * Get status of specific job.
+     * Release a job which was failed to execute.
      *
      * @param $id
-     *
-     * @return mixed
+     * @param int $delay
      */
-    public function status($id);
+    public function release($id, int $delay = 0);
+
+    /**
+     * Get current queue's size.
+     *
+     * @return int
+     */
+    public function size(): int;
 
     /**
      * Clear current queue.
@@ -52,20 +86,4 @@ interface QueueInterface
      * @return mixed
      */
     public function clear();
-
-    /**
-     * Get job message from queue.
-     *
-     * @param int $id
-     *
-     * @return mixed
-     */
-    public function get($id);
-
-    /**
-     * Get topic name of current queue.
-     *
-     * @return string
-     */
-    public function getTopic(): string;
 }

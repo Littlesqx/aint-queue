@@ -18,14 +18,4 @@ interface SyncJobInterface extends JobInterface
      * @return int
      */
     public function getTtr(): int;
-
-    /**
-     * Determine whether current job can retry if fail.
-     *
-     * @param int $attempt
-     * @param $error
-     *
-     * @return bool
-     */
-    public function canRetry(int $attempt, $error): bool;
 }
