@@ -20,6 +20,7 @@ interface SerializerInterface
      * @param $object
      *
      * @return string
+     *
      * @throws InvalidArgumentException
      */
     public function serialize($object): string;
@@ -30,6 +31,7 @@ interface SerializerInterface
      * @param string $serialized
      *
      * @return object
+     *
      * @throws InvalidArgumentException
      */
     public function unSerialize(string $serialized);
