@@ -23,7 +23,7 @@ class TickTimerProcess extends Process
     public function __construct(array $timers)
     {
         parent::__construct(function () use ($timers) {
-            SwooleHelper::setProcessName('aint-queue - timer process');
+            SwooleHelper::setProcessName('aint-queue-timer-process');
 
             $this->timers = $timers;
 
