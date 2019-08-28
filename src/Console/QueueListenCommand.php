@@ -20,7 +20,7 @@ class QueueListenCommand extends AbstractCommand
 
     protected function configure()
     {
-        $this->setDescription('listen the queue.')
+        $this->setDescription('Listen the queue.')
             ->setHelp('This Command allows you to run a process to listen the queue.')
             ->addOption('topic', 't', InputOption::VALUE_REQUIRED, 'The topic of queue.', 'default');
     }
