@@ -54,6 +54,6 @@ class AsyncJob implements AsyncJobInterface
      */
     public function getNextRetryTime(int $attempt): int
     {
-        // TODO: Implement getNextRetryTime() method.
+        return time() + 60 * $attempt;
     }
 }

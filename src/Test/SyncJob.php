@@ -64,6 +64,6 @@ class SyncJob implements SyncJobInterface
      */
     public function getNextRetryTime(int $attempt): int
     {
-        // TODO: Implement getNextRetryTime() method.
+        return time() + 60 * $attempt;
     }
 }
