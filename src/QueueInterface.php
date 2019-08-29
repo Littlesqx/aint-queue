@@ -15,11 +15,11 @@ use Littlesqx\AintQueue\Exception\InvalidArgumentException;
 interface QueueInterface
 {
     /**
-     * Get topic name of current queue.
+     * Get channel name of current queue.
      *
      * @return string
      */
-    public function getTopic(): string;
+    public function getChannel(): string;
 
     /**
      * Get job message from queue.
