@@ -133,7 +133,7 @@ class Manager
 
         while (true) {
             try {
-                [$id, $attemps, $job] = $this->queue->pop();
+                [$id, , $job] = $this->queue->pop();
 
                 if (null === $job) {
                     sleep($this->getSleepTime());
@@ -222,6 +222,19 @@ class Manager
      */
     public function executeJobInProcess($messageId): void
     {
+        $timeout = $this->options['worker']['process_worker']['max_execute_seconds'] ?? 60;
+        try {
+            [$id, , $job] = $this->queue->get($messageId);
+            $job instanceof SyncJobInterface && $timeout = $job->getTtr();
+        } catch (\Throwable $t) {
+            $this->getLogger()->error(get_class($t).': '.$t->getMessage(), [
+                'driver' => get_class($this->queue),
+                'channel' => $this->queue->getChannel(),
+                'message_id' => $id ?? 'null',
+            ]);
+            return;
+        }
+
         $entry = EnvironmentHelper::getAppBinary();
         if (null === $entry) {
             throw new RuntimeException('Fail to get app entry file.');
@@ -238,7 +251,6 @@ class Manager
         $process = new Process($cmd);
 
         // set timeout
-        $timeout = $options['timeout'] ?? 0;
         if ($timeout > 0) {
             $process->setTimeout($timeout);
         }
@@ -269,7 +281,7 @@ class Manager
      */
     public function getSleepTime(): int
     {
-        return (int) max($this->options['sleep_time'] ?? 0, 0);
+        return (int) max($this->options['sleep_seconds'] ?? 0, 0);
     }
 
     /**
@@ -294,5 +306,13 @@ class Manager
     public function exitMaster(): void
     {
         exit(0);
+    }
+
+    /**
+     * @return array
+     */
+    public function getOptions(): array
+    {
+        return $this->options ?? [];
     }
 }
