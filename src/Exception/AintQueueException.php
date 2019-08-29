@@ -10,6 +10,6 @@
 
 namespace Littlesqx\AintQueue\Exception;
 
-abstract class BaseException extends \Exception
+abstract class AintQueueException extends \Exception
 {
 }

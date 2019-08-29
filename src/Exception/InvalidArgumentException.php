@@ -10,6 +10,6 @@
 
 namespace Littlesqx\AintQueue\Exception;
 
-class InvalidArgumentException extends BaseException
+class InvalidArgumentException extends AintQueueException
 {
 }

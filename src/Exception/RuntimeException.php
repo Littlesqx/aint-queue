@@ -10,6 +10,6 @@
 
 namespace Littlesqx\AintQueue\Exception;
 
-class RuntimeException extends BaseException
+class RuntimeException extends AintQueueException
 {
 }
