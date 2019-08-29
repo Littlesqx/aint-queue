@@ -18,12 +18,12 @@ return [
             'connection' => [
                 // Dynamic, put everything you want here...
                 'host' => '127.0.0.1',
-                'port' => 6379 ,
+                'port' => 6379,
                 'database' => '0',
                 // 'password' => 'password',
                 // Required if you use some blocking operation.
                 'read_write_timeout' => 0,
-            ]
+            ],
         ],
         'memory_limit' => 512, // Mb
         'sleep_seconds' => 0,
@@ -39,7 +39,7 @@ return [
             ],
             'coroutine_worker' => [
                 'enable' => true,
-            ]
-        ]
+            ],
+        ],
     ],
 ];

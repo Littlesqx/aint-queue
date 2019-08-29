@@ -60,7 +60,7 @@ abstract class AbstractQueue implements QueueInterface
      */
     public function getChannel(): string
     {
-        return $this->channelPrefix . ':' . $this->channel;
+        return $this->channelPrefix.':'.$this->channel;
     }
 
     /**

@@ -232,6 +232,7 @@ class Manager
                 'channel' => $this->queue->getChannel(),
                 'message_id' => $id ?? 'null',
             ]);
+
             return;
         }
 

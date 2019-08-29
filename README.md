@@ -1,6 +1,6 @@
 <h1 align="center"> aint-queue </h1>
 
-<p align="center"> Queue but not only queue, which powered by swoole..</p>
+<p align="center"> Queue but not only queue, which powered by swoole.</p>
 
 
 ## Installing
