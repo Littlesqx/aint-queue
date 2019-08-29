@@ -31,6 +31,9 @@ class Queue extends AbstractQueue
      */
     const STATUS_DONE = 3;
 
+    /**
+     * @var Client
+     */
     protected $redis;
 
     public function __construct(string $topic)
