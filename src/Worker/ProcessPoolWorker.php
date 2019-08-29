@@ -81,7 +81,7 @@ class ProcessPoolWorker extends AbstractWorker
      */
     public function getName(): string
     {
-        return 'aint-queue-process-pool-worker'.":{$this->topic}";
+        return 'aint-queue-process-pool-worker'.":{$this->channel}";
     }
 
     /**
@@ -91,6 +91,6 @@ class ProcessPoolWorker extends AbstractWorker
      */
     public function getTaskQueueName(): string
     {
-        return 'aint-queue-process-pool-worker:task-queue'.":{$this->topic}";
+        return 'aint-queue-process-pool-worker:task-queue'.":{$this->channel}";
     }
 }

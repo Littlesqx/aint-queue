@@ -36,11 +36,11 @@ class Queue extends AbstractQueue
      */
     protected $redis;
 
-    public function __construct(string $topic)
+    public function __construct(string $channel, array $options = [])
     {
-        parent::__construct($topic);
+        parent::__construct($channel);
 
-        $this->redis = new Client(['read_write_timeout' => 0]);
+        $this->redis = new Client($options);
     }
 
     /**
@@ -73,13 +73,13 @@ class Queue extends AbstractQueue
             'serializedMessage' => $serializedMessage,
         ]);
 
-        $id = $this->redis->incr("{$this->channel}.{$this->topic}.message_id");
-        $this->redis->hset("{$this->channel}.{$this->topic}.messages", $id, $pushMessage);
+        $id = $this->redis->incr("{$this->getChannel()}:message_id");
+        $this->redis->hset("{$this->getChannel()}:messages", $id, $pushMessage);
 
         if ($this->pushDelay > 0) {
-            $this->redis->zadd("{$this->channel}.{$this->topic}.delayed", [$id => time() + $this->pushDelay]);
+            $this->redis->zadd("{$this->getChannel()}:delayed", [$id => time() + $this->pushDelay]);
         } else {
-            $this->redis->lpush("{$this->channel}.{$this->topic}.waiting", [$id]);
+            $this->redis->lpush("{$this->getChannel()}:waiting", [$id]);
         }
     }
 
@@ -92,14 +92,14 @@ class Queue extends AbstractQueue
      */
     public function pop()
     {
-        $id = $this->redis->brpop(["{$this->channel}.{$this->topic}.waiting"], 0)[1] ?? 0;
+        $id = $this->redis->brpop(["{$this->getChannel()}:waiting"], 0)[1] ?? 0;
 
         // reserved: {id} => attempts
         $this->redis->eval(
             LuaScripts::reserve(),
             2,
-            "{$this->channel}.{$this->topic}.reserved",
-            "{$this->channel}.{$this->topic}.attempts",
+            "{$this->getChannel()}:reserved",
+            "{$this->getChannel()}:attempts",
             $id
         );
 
@@ -115,9 +115,9 @@ class Queue extends AbstractQueue
      */
     public function remove($id)
     {
-        $this->redis->hdel("$this->channel.{$this->topic}.reserved", $id);
-        $this->redis->hdel("$this->channel.{$this->topic}.attempts", $id);
-        $this->redis->hdel("$this->channel.{$this->topic}.messages", $id);
+        $this->redis->hdel("{$this->getChannel()}:reserved", $id);
+        $this->redis->hdel("{$this->getChannel()}:attempts", $id);
+        $this->redis->hdel("{$this->getChannel()}:messages", $id);
     }
 
     /**
@@ -133,8 +133,8 @@ class Queue extends AbstractQueue
         return $this->redis->eval(
             LuaScripts::release(),
             2,
-            "{$this->channel}.{$this->topic}.delayed",
-            "{$this->channel}.{$this->topic}.reserved",
+            "{$this->getChannel()}:delayed",
+            "{$this->getChannel()}:reserved",
             $id,
             time() + $delay
         );
@@ -155,11 +155,11 @@ class Queue extends AbstractQueue
             throw new InvalidArgumentException("Invalid message ID: $id.");
         }
 
-        if ($this->redis->hexists("$this->channel.reserved", $id)) {
+        if ($this->redis->hexists("{$this->getChannel()}:reserved", $id)) {
             return self::STATUS_RESERVED;
         }
 
-        if ($this->redis->hexists("$this->channel.messages", $id)) {
+        if ($this->redis->hexists("{$this->getChannel()}:messages", $id)) {
             return self::STATUS_WAITING;
         }
 
@@ -173,7 +173,7 @@ class Queue extends AbstractQueue
      */
     public function clear()
     {
-        $keys = $this->redis->keys("{$this->channel}.{$this->topic}.*");
+        $keys = $this->redis->keys("{$this->getChannel()}:*");
         $this->redis->del($keys);
     }
 
@@ -188,9 +188,9 @@ class Queue extends AbstractQueue
      */
     public function get($id)
     {
-        $attempts = $this->redis->hget("{$this->channel}.{$this->topic}.attempts", $id);
+        $attempts = $this->redis->hget("{$this->getChannel()}:attempts", $id);
 
-        $payload = $this->redis->hget("{$this->channel}.{$this->topic}.messages", $id);
+        $payload = $this->redis->hget("{$this->getChannel()}:messages", $id);
 
         if (null === $payload) {
             return [$id, 0, null];
@@ -204,13 +204,13 @@ class Queue extends AbstractQueue
     }
 
     /**
-     * Get topic name of current queue.
+     * Get channel name of current queue.
      *
      * @return string
      */
-    public function getTopic(): string
+    public function getChannel(): string
     {
-        return $this->topic;
+        return $this->channel;
     }
 
     /**
@@ -223,9 +223,9 @@ class Queue extends AbstractQueue
         return $this->redis->eval(
             LuaScripts::size(),
             3,
-            "{$this->channel}.{$this->topic}.waiting",
-            "{$this->channel}.{$this->topic}.delayed",
-            "{$this->channel}.{$this->topic}.reserved"
+            "{$this->getChannel()}:waiting",
+            "{$this->getChannel()}:delayed",
+            "{$this->getChannel()}:reserved"
         );
     }
 
@@ -273,8 +273,8 @@ class Queue extends AbstractQueue
         $this->redis->eval(
             LuaScripts::migrateExpiredJobs(),
             2,
-            "{$this->channel}.{$this->topic}.delayed",
-            "{$this->channel}.{$this->topic}.waiting",
+            "{$this->getChannel()}:delayed",
+            "{$this->getChannel()}:waiting",
             time()
         );
     }
@@ -286,12 +286,20 @@ class Queue extends AbstractQueue
      */
     public function status(): array
     {
-        $waiting = $this->redis->llen("{$this->channel}.{$this->topic}.waiting");
-        $delayed = $this->redis->zcount("{$this->channel}.{$this->topic}.delayed", '-inf', '+inf');
-        $reserved = $this->redis->hlen("{$this->channel}.{$this->topic}.reserved");
-        $total = $this->redis->get("{$this->channel}.{$this->topic}.message_id") ?? 0;
+        $waiting = $this->redis->llen("{$this->getChannel()}:waiting");
+        $delayed = $this->redis->zcount("{$this->getChannel()}:delayed", '-inf', '+inf');
+        $reserved = $this->redis->hlen("{$this->getChannel()}:reserved");
+        $total = $this->redis->get("{$this->getChannel()}:message_id") ?? 0;
         $done = $total - $waiting - $delayed - $reserved;
 
         return [$waiting, $delayed, $reserved, $done, $total];
+    }
+
+    /**
+     * Check jobs' execution, you can register some status reporter.
+     */
+    public function checkStatus()
+    {
+        // TODO: Implement checkStatus() method.
     }
 }

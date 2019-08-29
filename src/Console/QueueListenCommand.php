@@ -22,7 +22,7 @@ class QueueListenCommand extends AbstractCommand
     {
         $this->setDescription('Listen the queue.')
             ->setHelp('This Command allows you to run a process to listen the queue.')
-            ->addOption('topic', 't', InputOption::VALUE_REQUIRED, 'The topic of queue.', 'default');
+            ->addOption('channel', 't', InputOption::VALUE_REQUIRED, 'The channel of queue.', 'default');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

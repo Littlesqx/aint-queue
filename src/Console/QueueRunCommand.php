@@ -22,7 +22,7 @@ class QueueRunCommand extends AbstractCommand
     {
         $this->setDescription('Run a job pop from the queue.')
             ->setHelp('This Command allows you to run a job at the head of the queue.')
-            ->addOption('topic', 't', InputOption::VALUE_REQUIRED, 'The topic of queue.', 'default')
+            ->addOption('channel', 't', InputOption::VALUE_REQUIRED, 'The channel of queue.', 'default')
             ->addOption('id', null, InputOption::VALUE_REQUIRED, 'Job\'s ID.'.'test');
     }
 

@@ -179,7 +179,7 @@ class Manager
             if (null === $job) {
                 $this->getLogger()->error('Unresolvable job.', [
                     'driver' => get_class($this->queue),
-                    'topic' => $this->queue->getTopic(),
+                    'channel' => $this->queue->getChannel(),
                     'message_id' => $id,
                 ]);
 
@@ -196,7 +196,7 @@ class Manager
                 $type = is_object($job) ? get_class($job) : gettype($job);
                 $this->getLogger()->error('Not supported job, type: '.$type.'.', [
                     'driver' => get_class($this->queue),
-                    'topic' => $this->queue->getTopic(),
+                    'channel' => $this->queue->getChannel(),
                     'message_id' => $id,
                 ]);
             }
@@ -207,7 +207,7 @@ class Manager
             }
             $this->getLogger()->error(get_class($t).': '.$t->getMessage(), [
                 'driver' => get_class($this->queue),
-                'topic' => $this->queue->getTopic(),
+                'channel' => $this->queue->getChannel(),
                 'message_id' => $id,
             ]);
         }
@@ -232,7 +232,7 @@ class Manager
             $entry,
             'queue:run',
             "--id={$messageId}",
-            "--topic={$this->queue->getTopic()}",
+            "--channel={$this->queue->getChannel()}",
         ];
 
         $process = new Process($cmd);

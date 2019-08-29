@@ -38,7 +38,7 @@ class ProcessWorker extends AbstractWorker
      */
     public function getName(): string
     {
-        return 'aint-queue-process-worker'.":{$this->topic}";
+        return 'aint-queue-process-worker'.":{$this->channel}";
     }
 
     /**
@@ -48,6 +48,6 @@ class ProcessWorker extends AbstractWorker
      */
     public function getTaskQueueName(): string
     {
-        return 'aint-queue-process-worker:task-queue'.":{$this->topic}";
+        return 'aint-queue-process-worker:task-queue'.":{$this->channel}";
     }
 }

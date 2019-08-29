@@ -30,7 +30,7 @@ abstract class AbstractWorker extends SwooleProcess implements WorkerInterface
     /**
      * @var string
      */
-    protected $topic;
+    protected $channel;
 
     /**
      * @var bool
@@ -41,7 +41,7 @@ abstract class AbstractWorker extends SwooleProcess implements WorkerInterface
     {
         $this->manager = $manager;
 
-        $this->topic = $manager->getQueue()->getTopic();
+        $this->channel = $manager->getQueue()->getChannel();
 
         // set process name
         SwooleHelper::setProcessName($this->getName());

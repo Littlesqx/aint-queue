@@ -23,16 +23,16 @@ class QueueClearCommand extends AbstractCommand
     {
         $this->setDescription('Clear the queue.')
             ->setHelp('This Command allows you to clear the queue.')
-            ->addOption('topic', 't', InputOption::VALUE_REQUIRED, 'The topic of queue.', 'default');
+            ->addOption('channel', 't', InputOption::VALUE_REQUIRED, 'The channel of queue.', 'default');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $topic = $input->getOption('topic');
+        $channel = $input->getOption('channel');
 
         $io = new SymfonyStyle($input, $output);
 
-        if ($io->confirm("Are you sure to clear the $topic-queue?", false)) {
+        if ($io->confirm("Are you sure to clear the $channel-queue?", false)) {
             $this->manager->getQueue()->clear();
         }
     }

@@ -38,7 +38,7 @@ class CoroutineWorker extends AbstractWorker
      */
     public function getName(): string
     {
-        return 'aint-queue-coroutine-worker'.":{$this->topic}";
+        return 'aint-queue-coroutine-worker'.":{$this->channel}";
     }
 
     /**
@@ -48,6 +48,6 @@ class CoroutineWorker extends AbstractWorker
      */
     public function getTaskQueueName(): string
     {
-        return 'aint-queue-coroutine-worker:task-queue'.":{$this->topic}";
+        return 'aint-queue-coroutine-worker:task-queue'.":{$this->channel}";
     }
 }

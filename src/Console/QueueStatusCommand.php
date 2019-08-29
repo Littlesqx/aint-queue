@@ -23,16 +23,16 @@ class QueueStatusCommand extends AbstractCommand
     {
         $this->setDescription('Get the execute status of specific queue.')
             ->setHelp('This Command allows you to get the execute status of specific queue.')
-            ->addOption('topic', 't', InputOption::VALUE_REQUIRED, 'The topic of queue.', 'default');
+            ->addOption('channel', 't', InputOption::VALUE_REQUIRED, 'The channel of queue.', 'default');
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $topic = $input->getOption('topic');
+        $channel = $input->getOption('channel');
 
         [$waiting, $delayed, $reserved, $done, $total] = $this->manager->getQueue()->status();
 
-        $output->writeln("\nThe status of {$topic}-queue:\n");
+        $output->writeln("\nThe status of {$channel}-queue:\n");
 
         $table = new Table($output);
         $table->setStyle('box')
