@@ -46,9 +46,24 @@ class Manager
         $this->queue = $driver;
         $this->options = $options;
 
+        $this->init();
+    }
+
+    protected function init()
+    {
         $this->logger = new DefaultLogger();
     }
 
+    /**
+     * Get master pid file path.
+     *
+     * @return string
+     */
+    protected function getPidFile(): string
+    {
+        $root = $this->options['pid_path'] ?? '';
+        return $root . "/{$this->getQueue()->getChannel()}-master.pid";
+    }
     /**
      * Register signal handler.
      */
@@ -56,12 +71,23 @@ class Manager
     {
         // force exit
         SwooleProcess::signal(SIGTERM, function ($signo) {
+            $this->tickTimer->stop();
+            $this->exitMaster();
         });
         // force killed
         SwooleProcess::signal(SIGKILL, function ($signo) {
+            $this->tickTimer->stop();
+            $this->exitMaster();
+        });
+        // ctrl + c
+        SwooleProcess::signal(SIGINT, function ($signo) {
+            $this->tickTimer->stop();
+            $this->exitMaster();
         });
         // custom signal - exit smoothly
         SwooleProcess::signal(SIGUSR1, function ($signo) {
+            $this->tickTimer->stop();
+            $this->exitMaster();
         });
         // custom signal - record process status
         SwooleProcess::signal(SIGUSR2, function ($signo) {
@@ -130,6 +156,8 @@ class Manager
         $this->registerTimer();
 
         $director = new WorkerDirector($this);
+
+        file_put_contents($this->getPidFile(), getmypid());
 
         while (true) {
             try {
@@ -291,6 +319,7 @@ class Manager
      */
     public function exitMaster(): void
     {
+        @unlink($this->getPidFile());
         exit(0);
     }
 
@@ -300,5 +329,21 @@ class Manager
     public function getOptions(): array
     {
         return $this->options ?? [];
+    }
+
+    /**
+     * Whether current channel's master is running.
+     *
+     * @return bool
+     */
+    public function isRunning(): bool
+    {
+        $pidFile = $this->getPidFile();
+        if (file_exists($pidFile)) {
+            $pid = (int) file_get_contents($pidFile);
+            return SwooleProcess::kill($pid, 0);
+        }
+
+        return false;
     }
 }
