@@ -19,10 +19,10 @@ use Swoole\Runtime;
 class ProcessWorker extends AbstractWorker
 {
     protected $timer = 0;
+
     public function __construct(Manager $manager)
     {
         parent::__construct($manager, function () {
-
             Runtime::enableCoroutine(true);
 
             SwooleHelper::setProcessName($this->getTaskQueueName());
@@ -30,7 +30,6 @@ class ProcessWorker extends AbstractWorker
             SwooleProcess::signal(SIGTERM, function () {
                 $this->canContinue = false;
                 $this->manager->getLogger()->info("Worker: {$this->getName()} receive signal SIGTERM.");
-
             });
             SwooleProcess::signal(SIGUSR2, function () {
                 $this->canContinue = false;
@@ -49,7 +48,6 @@ class ProcessWorker extends AbstractWorker
                     }
                 }
             });
-
         }, true);
     }
 

@@ -27,7 +27,6 @@ class ProcessPoolWorker extends AbstractWorker
     public function __construct(Manager $manager)
     {
         parent::__construct($manager, function () {
-
             SwooleHelper::setProcessName($this->getTaskQueueName());
 
             $this->initRedis();
@@ -60,17 +59,17 @@ class ProcessPoolWorker extends AbstractWorker
 
         SwooleProcess::signal(SIGTERM, function () use ($workerId) {
             $this->canContinue = false;
-            $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' ' . "receive signal SIGTERM.");
+            $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' '.'receive signal SIGTERM.');
         });
 
         SwooleProcess::signal(SIGQUIT, function () use ($workerId) {
             $this->canContinue = false;
-            $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' ' . "receive signal SIGTERM.");
+            $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' '.'receive signal SIGTERM.');
         });
 
         SwooleProcess::signal(SIGKILL, function () use ($workerId) {
             $this->canContinue = false;
-            $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' ' . "receive signal SIGTERM.");
+            $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' '.'receive signal SIGTERM.');
         });
 
         $this->initRedis();

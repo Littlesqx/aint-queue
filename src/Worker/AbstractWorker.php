@@ -58,7 +58,7 @@ abstract class AbstractWorker implements WorkerInterface
         $this->initRedis();
 
         SwooleProcess::signal(SIGCHLD, function () {
-            while($ret =  SwooleProcess::wait(false)) {
+            while ($ret = SwooleProcess::wait(false)) {
                 $this->manager->getLogger()->info("Worker: {$this->getName()} - pid={$ret['pid']} exit.");
             }
         });
@@ -80,6 +80,7 @@ abstract class AbstractWorker implements WorkerInterface
      * Start current worker.
      *
      * @return bool
+     *
      * @throws RuntimeException
      */
     public function start(): bool
@@ -123,7 +124,7 @@ abstract class AbstractWorker implements WorkerInterface
 
         SwooleProcess::kill($this->pid, SIGUSR2);
 
-        return $this->atomic->wait(2) !== false;
+        return false !== $this->atomic->wait(2);
     }
 
     /**
@@ -145,5 +146,4 @@ abstract class AbstractWorker implements WorkerInterface
     {
         return $this->pid > 0 && SwooleProcess::kill($this->pid, 0);
     }
-
 }
