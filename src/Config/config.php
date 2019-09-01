@@ -33,12 +33,12 @@ return [
                 'max_execute_seconds' => 0,
             ],
             'process_pool_worker' => [
-                'enable' => false,
+                'enable' => true,
                 'memory_limit' => 512, // Mb
                 'worker_number' => 4,
             ],
             'coroutine_worker' => [
-                'enable' => true,
+                'enable' => false,
             ],
         ],
     ],

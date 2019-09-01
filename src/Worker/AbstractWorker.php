@@ -10,17 +10,28 @@
 
 namespace Littlesqx\AintQueue\Worker;
 
-use Littlesqx\AintQueue\Helper\SwooleHelper;
+use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Manager;
 use Predis\Client;
+use Swoole\Atomic;
 use Swoole\Process as SwooleProcess;
 
-abstract class AbstractWorker extends SwooleProcess implements WorkerInterface
+abstract class AbstractWorker implements WorkerInterface
 {
     /**
      * @var Manager
      */
     protected $manager;
+
+    /**
+     * @var SwooleProcess
+     */
+    protected $process;
+
+    /**
+     * @var int
+     */
+    protected $pid;
 
     /**
      * @var Client
@@ -37,20 +48,24 @@ abstract class AbstractWorker extends SwooleProcess implements WorkerInterface
      */
     protected $canContinue = true;
 
-    public function __construct(Manager $manager, \Closure $closure, $enableCoroutine = null)
+    protected $atomic;
+
+    public function __construct(Manager $manager, \Closure $closure, bool $enableCoroutine = false)
     {
         $this->manager = $manager;
-
         $this->channel = $manager->getQueue()->getChannel();
-
-        // set process name
-        SwooleHelper::setProcessName($this->getName());
 
         $this->initRedis();
 
-        $this->manager->getLogger()->info($this->getName().' start.');
+        SwooleProcess::signal(SIGCHLD, function () {
+            while($ret =  SwooleProcess::wait(false)) {
+                $this->manager->getLogger()->info("Worker: {$this->getName()} - pid={$ret['pid']} exit.");
+            }
+        });
 
-        parent::__construct($closure, null, null, $enableCoroutine);
+        $this->atomic = new Atomic();
+
+        $this->process = new SwooleProcess($closure, false, 1, $enableCoroutine);
     }
 
     /**
@@ -62,6 +77,56 @@ abstract class AbstractWorker extends SwooleProcess implements WorkerInterface
     }
 
     /**
+     * Start current worker.
+     *
+     * @return bool
+     * @throws RuntimeException
+     */
+    public function start(): bool
+    {
+        if ($this->isRunning()) {
+            throw new RuntimeException('Worker is running, do not start again!');
+        }
+
+        $this->pid = $this->process->start();
+
+        $this->manager->getLogger()->info($this->getName().' - pid='.$this->pid.' start.');
+
+        return $this->isRunning();
+    }
+
+    /**
+     * Stop current worker.
+     *
+     * @throws RuntimeException
+     */
+    public function stop(): void
+    {
+        if (!$this->isRunning()) {
+            throw new RuntimeException('Worker is already stop!');
+        }
+        SwooleProcess::kill($this->pid, SIGTERM);
+    }
+
+    /**
+     * Wait worker stop and exit.
+     *
+     * @return bool
+     *
+     * @throws RuntimeException
+     */
+    public function wait(): bool
+    {
+        if (!$this->isRunning()) {
+            throw new RuntimeException('Worker is already stop!');
+        }
+
+        SwooleProcess::kill($this->pid, SIGUSR2);
+
+        return $this->atomic->wait(2) !== false;
+    }
+
+    /**
      * Receive an task into current worker.
      *
      * @param int $messageId
@@ -70,4 +135,15 @@ abstract class AbstractWorker extends SwooleProcess implements WorkerInterface
     {
         $this->redis->lpush($this->getTaskQueueName(), [$messageId]);
     }
+
+    /**
+     * Whether current worker is running.
+     *
+     * @return bool
+     */
+    public function isRunning(): bool
+    {
+        return $this->pid > 0 && SwooleProcess::kill($this->pid, 0);
+    }
+
 }

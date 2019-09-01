@@ -20,6 +20,18 @@ interface WorkerInterface
     public function receive($messageId): void;
 
     /**
+     * Start current worker.
+     *
+     * @return bool
+     */
+    public function start(): bool;
+
+    /**
+     * Stop current worker.
+     */
+    public function stop(): void;
+
+    /**
      * Get worker name.
      *
      * @return string

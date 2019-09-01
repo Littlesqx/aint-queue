@@ -129,7 +129,7 @@ class Manager
         $this->registerSignal();
         $this->registerTimer();
 
-        $jobDistributor = new JobDistributor($this);
+        $director = new WorkerDirector($this);
 
         while (true) {
             try {
@@ -139,14 +139,15 @@ class Manager
                     sleep($this->getSleepTime());
                     continue;
                 }
-                $jobDistributor->dispatch($id, $job);
+                $director->dispatch($id, $job);
             } catch (\Throwable $t) {
                 $this->getLogger()->error('Job execute error, '.$t->getMessage());
             }
 
             if ($this->memoryExceeded()) {
                 $this->getLogger()->info('Memory exceeded, exit smoothly.');
-                $this->waitWorkers();
+                $director->wait();
+                $this->tickTimer->stop();
                 $this->exitMaster();
             }
         }
@@ -283,22 +284,6 @@ class Manager
     public function getSleepTime(): int
     {
         return (int) max($this->options['sleep_seconds'] ?? 0, 0);
-    }
-
-    /**
-     * Wait all the worker finish, then exit.
-     */
-    public function waitWorkers(): void
-    {
-        $this->tickTimer->stop();
-    }
-
-    /**
-     * Force exit worker.
-     */
-    public function exitWorkers(): void
-    {
-        $this->tickTimer->stop();
     }
 
     /**

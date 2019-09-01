@@ -12,8 +12,10 @@ namespace Littlesqx\AintQueue\Worker;
 
 use Littlesqx\AintQueue\Helper\SwooleHelper;
 use Littlesqx\AintQueue\Manager;
+use Swoole\Coroutine;
 use Swoole\Process as SwooleProcess;
 use Swoole\Process\Pool as SwooleProcessPool;
+use Swoole\Runtime;
 
 class ProcessPoolWorker extends AbstractWorker
 {
@@ -25,9 +27,12 @@ class ProcessPoolWorker extends AbstractWorker
     public function __construct(Manager $manager)
     {
         parent::__construct($manager, function () {
+
+            SwooleHelper::setProcessName($this->getTaskQueueName());
+
             $this->initRedis();
 
-            $this->processPool = new SwooleProcessPool(4);
+            $this->processPool = new SwooleProcessPool(4, 0, 0, true);
             $this->processPool->on('WorkerStart', function ($pool, $workerId) {
                 $this->workerStart($pool, $workerId);
             });
@@ -47,20 +52,40 @@ class ProcessPoolWorker extends AbstractWorker
      */
     protected function workerStart(SwooleProcessPool $pool, $workerId)
     {
+        Runtime::enableCoroutine(true);
+
         $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' start.');
 
         SwooleHelper::setProcessName($this->getName().' sub-worker:'.$workerId);
 
-        SwooleProcess::signal(SIGTERM, function () {
+        SwooleProcess::signal(SIGTERM, function () use ($workerId) {
             $this->canContinue = false;
+            $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' ' . "receive signal SIGTERM.");
+        });
+
+        SwooleProcess::signal(SIGQUIT, function () use ($workerId) {
+            $this->canContinue = false;
+            $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' ' . "receive signal SIGTERM.");
+        });
+
+        SwooleProcess::signal(SIGKILL, function () use ($workerId) {
+            $this->canContinue = false;
+            $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' ' . "receive signal SIGTERM.");
         });
 
         $this->initRedis();
 
-        while ($this->canContinue) {
-            $messageId = $this->redis->brpop([$this->getTaskQueueName()], 0)[1] ?? 0;
-            $this->manager->executeJob($messageId);
-        }
+        Coroutine::create(function () use ($workerId) {
+            while ($this->canContinue) {
+                $messageId = $this->redis->brpop([$this->getTaskQueueName()], 0)[1] ?? 0;
+                $this->manager->getLogger()->info('start '.$messageId.'.');
+                $this->manager->executeJob($messageId);
+                $this->manager->getLogger()->info('end '.$messageId.'.');
+                if (!$this->canContinue) {
+                    $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' start.');
+                }
+            }
+        });
     }
 
     /**
