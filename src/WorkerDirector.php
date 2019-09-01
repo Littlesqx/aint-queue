@@ -68,6 +68,11 @@ class WorkerDirector
         }
     }
 
+    /**
+     * Wait running worker exit.
+     *
+     * @throws Exception\RuntimeException
+     */
     public function wait()
     {
         if ($this->processWorker && $this->processWorker->isRunning()) {
@@ -79,6 +84,11 @@ class WorkerDirector
         }
     }
 
+    /**
+     * Stop running worker.
+     *
+     * @throws Exception\RuntimeException
+     */
     public function stop()
     {
         if ($this->processWorker->isRunning()) {
