@@ -11,6 +11,7 @@
 namespace Littlesqx\AintQueue;
 
 use Littlesqx\AintQueue\Driver\Redis\Queue;
+use Littlesqx\AintQueue\Event\WarningHandler\WarningHandlerInterface;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
@@ -46,7 +47,38 @@ class Manager
         $this->queue = $driver;
         $this->options = $options;
 
+        $this->init();
+    }
+
+    protected function init()
+    {
         $this->logger = new DefaultLogger();
+    }
+
+    /**
+     * Setup pidFile.
+     *
+     * @throws RuntimeException
+     */
+    protected function setupPidFile(): void
+    {
+        $pidFile = $this->getPidFile();
+        if ($this->isRunning()) {
+            throw new RuntimeException("Listener for queue:{$this->getQueue()->getChannel()} is running!");
+        }
+        @file_put_contents($pidFile, getmypid());
+    }
+
+    /**
+     * Get master pid file path.
+     *
+     * @return string
+     */
+    protected function getPidFile(): string
+    {
+        $root = $this->options['pid_path'] ?? '';
+
+        return $root."/{$this->getQueue()->getChannel()}-master.pid";
     }
 
     /**
@@ -56,12 +88,23 @@ class Manager
     {
         // force exit
         SwooleProcess::signal(SIGTERM, function ($signo) {
+            $this->tickTimer->stop();
+            $this->exitMaster();
         });
         // force killed
         SwooleProcess::signal(SIGKILL, function ($signo) {
+            $this->tickTimer->stop();
+            $this->exitMaster();
+        });
+        // ctrl + c
+        SwooleProcess::signal(SIGINT, function ($signo) {
+            $this->tickTimer->stop();
+            $this->exitMaster();
         });
         // custom signal - exit smoothly
         SwooleProcess::signal(SIGUSR1, function ($signo) {
+            $this->tickTimer->stop();
+            $this->exitMaster();
         });
         // custom signal - record process status
         SwooleProcess::signal(SIGUSR2, function ($signo) {
@@ -80,7 +123,7 @@ class Manager
             }),
             // check queue status
             new Timer\TickTimer(1000 * 60 * 5, function () {
-                $this->queue->checkStatus();
+                $this->checkQueueStatus();
             }),
         ]);
 
@@ -123,13 +166,16 @@ class Manager
 
     /**
      * Listen the queue, to distribute job.
+     *
+     * @throws RuntimeException
      */
     public function listen(): void
     {
         $this->registerSignal();
         $this->registerTimer();
+        $this->setupPidFile();
 
-        $jobDistributor = new JobDistributor($this);
+        $director = new WorkerDirector($this);
 
         while (true) {
             try {
@@ -139,14 +185,15 @@ class Manager
                     sleep($this->getSleepTime());
                     continue;
                 }
-                $jobDistributor->dispatch($id, $job);
+                $director->dispatch($id, $job);
             } catch (\Throwable $t) {
                 $this->getLogger()->error('Job execute error, '.$t->getMessage());
             }
 
             if ($this->memoryExceeded()) {
                 $this->getLogger()->info('Memory exceeded, exit smoothly.');
-                $this->waitWorkers();
+                $director->wait();
+                $this->tickTimer->stop();
                 $this->exitMaster();
             }
         }
@@ -286,26 +333,11 @@ class Manager
     }
 
     /**
-     * Wait all the worker finish, then exit.
-     */
-    public function waitWorkers(): void
-    {
-        $this->tickTimer->stop();
-    }
-
-    /**
-     * Force exit worker.
-     */
-    public function exitWorkers(): void
-    {
-        $this->tickTimer->stop();
-    }
-
-    /**
      * Exit master process.
      */
     public function exitMaster(): void
     {
+        @unlink($this->getPidFile());
         exit(0);
     }
 
@@ -315,5 +347,55 @@ class Manager
     public function getOptions(): array
     {
         return $this->options ?? [];
+    }
+
+    /**
+     * Whether current channel's master is running.
+     *
+     * @return bool
+     */
+    public function isRunning(): bool
+    {
+        $pidFile = $this->getPidFile();
+        if (file_exists($pidFile)) {
+            $pid = (int) file_get_contents($pidFile);
+
+            return SwooleProcess::kill($pid, 0);
+        }
+
+        return false;
+    }
+
+    /**
+     * Check current queue's running status.
+     */
+    protected function checkQueueStatus()
+    {
+        [$waiting, $delayed, $reserved, $done, $total] = $this->getQueue()->status();
+
+        $maxWaiting = $this->getOptions()['warning_thresholds']['waiting_job_number'] ?? PHP_INT_MAX;
+
+        if (count($waiting) >= $maxWaiting) {
+            $handlers = $this->getOptions()['warning_handler'] ?? [];
+            foreach ($handlers as $handlerClass) {
+                if (class_exists($handlerClass)) {
+                    $handler = new $handlerClass();
+                    if ($handler instanceof WarningHandlerInterface) {
+                        try {
+                            $type = 'waiting_job_overflow';
+                            $message = 'current waiting jobs\' number is '.$waiting.'!';
+                            $handler->handle($type, $message);
+                        } catch (\Throwable $t) {
+                            $this->getLogger()->error('Handler error, '.$t->getMessage(), [
+                                'driver' => get_class($this->queue),
+                                'channel' => $this->queue->getChannel(),
+                                'warning_type' => $type,
+                                'warning_message' => $message,
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
