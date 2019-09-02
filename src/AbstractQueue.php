@@ -69,11 +69,6 @@ abstract class AbstractQueue implements QueueInterface
     abstract public function migrateExpired(): void;
 
     /**
-     * Check jobs' execution, you can register some status reporter.
-     */
-    abstract public function checkStatus();
-
-    /**
      * Delay to execute the job.
      *
      * @param int $delay

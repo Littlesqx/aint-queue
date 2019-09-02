@@ -295,11 +295,4 @@ class Queue extends AbstractQueue
         return [$waiting, $delayed, $reserved, $done, $total];
     }
 
-    /**
-     * Check jobs' execution, you can register some status reporter.
-     */
-    public function checkStatus()
-    {
-        // TODO: Implement checkStatus() method.
-    }
 }

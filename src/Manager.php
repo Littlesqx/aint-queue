@@ -11,6 +11,7 @@
 namespace Littlesqx\AintQueue;
 
 use Littlesqx\AintQueue\Driver\Redis\Queue;
+use Littlesqx\AintQueue\Event\WarningHandler\WarningHandlerInterface;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
@@ -55,6 +56,20 @@ class Manager
     }
 
     /**
+     * Setup pidFile.
+     *
+     * @throws RuntimeException
+     */
+    protected function setupPidFile(): void
+    {
+        $pidFile = $this->getPidFile();
+        if ($this->isRunning()) {
+            throw new RuntimeException("Listener for queue:{$this->getQueue()->getChannel()} is running!");
+        }
+        @file_put_contents($pidFile, getmypid());
+    }
+
+    /**
      * Get master pid file path.
      *
      * @return string
@@ -62,8 +77,10 @@ class Manager
     protected function getPidFile(): string
     {
         $root = $this->options['pid_path'] ?? '';
-        return $root . "/{$this->getQueue()->getChannel()}-master.pid";
+
+        return $root."/{$this->getQueue()->getChannel()}-master.pid";
     }
+
     /**
      * Register signal handler.
      */
@@ -106,7 +123,7 @@ class Manager
             }),
             // check queue status
             new Timer\TickTimer(1000 * 60 * 5, function () {
-                $this->queue->checkStatus();
+                $this->checkQueueStatus();
             }),
         ]);
 
@@ -149,15 +166,16 @@ class Manager
 
     /**
      * Listen the queue, to distribute job.
+     *
+     * @throws RuntimeException
      */
     public function listen(): void
     {
         $this->registerSignal();
         $this->registerTimer();
+        $this->setupPidFile();
 
         $director = new WorkerDirector($this);
-
-        file_put_contents($this->getPidFile(), getmypid());
 
         while (true) {
             try {
@@ -341,9 +359,43 @@ class Manager
         $pidFile = $this->getPidFile();
         if (file_exists($pidFile)) {
             $pid = (int) file_get_contents($pidFile);
+
             return SwooleProcess::kill($pid, 0);
         }
 
         return false;
+    }
+
+    /**
+     * Check current queue's running status.
+     */
+    protected function checkQueueStatus()
+    {
+        [$waiting, $delayed, $reserved, $done, $total] = $this->getQueue()->status();
+
+        $maxWaiting = $this->getOptions()['warning_thresholds']['waiting_job_number'] ?? PHP_INT_MAX;
+
+        if (count($waiting) >= $maxWaiting) {
+            $handlers = $this->getOptions()['warning_handler'] ?? [];
+            foreach ($handlers as $handlerClass) {
+                if (class_exists($handlerClass)) {
+                    $handler = new $handlerClass();
+                    if ($handler instanceof WarningHandlerInterface) {
+                        try {
+                            $type = 'waiting_job_overflow';
+                            $message = 'current waiting jobs\' number is '.$waiting.'!';
+                            $handler->handle($type, $message);
+                        } catch (\Throwable $t) {
+                            $this->getLogger()->error('Handler error, '.$t->getMessage(), [
+                                'driver' => get_class($this->queue),
+                                'channel' => $this->queue->getChannel(),
+                                'warning_type' => $type,
+                                'warning_message' => $message,
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
     }
 }
