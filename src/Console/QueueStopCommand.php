@@ -10,9 +10,11 @@
 
 namespace Littlesqx\AintQueue\Console;
 
+use Swoole\Process;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Style\SymfonyStyle;
 
 class QueueStopCommand extends AbstractCommand
 {
@@ -33,6 +35,13 @@ class QueueStopCommand extends AbstractCommand
 
             return;
         }
-        $this->manager->exitMaster();
+        $io = new SymfonyStyle($input, $output);
+        $selected = $io->choice("Select the way to quit {$channel}-queue", ['Force', 'Wait'], 'Wait');
+
+        $signal = $selected === 'Force' ? SIGKILL : SIGUSR1;
+
+        $pid = (int) file_get_contents($this->manager->getPidFile());
+
+        Process::kill($pid, $signal);
     }
 }
