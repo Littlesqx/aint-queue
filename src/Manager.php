@@ -74,7 +74,7 @@ class Manager
      *
      * @return string
      */
-    protected function getPidFile(): string
+    public function getPidFile(): string
     {
         $root = $this->options['pid_path'] ?? '';
 
