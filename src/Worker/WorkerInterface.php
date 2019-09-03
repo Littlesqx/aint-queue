@@ -38,10 +38,4 @@ interface WorkerInterface
      */
     public function getName(): string;
 
-    /**
-     * Get waiting task's queue name.
-     *
-     * @return string
-     */
-    public function getTaskQueueName(): string;
 }

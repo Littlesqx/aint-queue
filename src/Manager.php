@@ -17,7 +17,10 @@ use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
 use Littlesqx\AintQueue\Timer\TickTimerProcess;
 use Psr\Log\LoggerInterface;
+use Swoole\Coroutine;
 use Swoole\Process as SwooleProcess;
+use Swoole\Runtime;
+use Swoole\Timer;
 use Symfony\Component\Process\Process;
 
 class Manager
@@ -38,9 +41,9 @@ class Manager
     protected $options;
 
     /**
-     * @var TickTimerProcess
+     * @var WorkerDirector
      */
-    protected $tickTimer;
+    protected $workerDirector;
 
     public function __construct(QueueInterface $driver, array $options = [])
     {
@@ -69,6 +72,11 @@ class Manager
         @file_put_contents($pidFile, getmypid());
     }
 
+    protected function setupWorker(): void
+    {
+        $this->workerDirector = new WorkerDirector($this);
+    }
+
     /**
      * Get master pid file path.
      *
@@ -87,27 +95,28 @@ class Manager
     protected function registerSignal(): void
     {
         // force exit
-        SwooleProcess::signal(SIGTERM, function ($signo) {
-            $this->tickTimer->stop();
+        SwooleProcess::signal(SIGTERM, function () {
+            $this->workerDirector->wait();
             $this->exitMaster();
         });
         // force killed
-        SwooleProcess::signal(SIGKILL, function ($signo) {
-            $this->tickTimer->stop();
+        SwooleProcess::signal(SIGKILL, function () {
+            $this->workerDirector->wait();
             $this->exitMaster();
         });
         // ctrl + c
-        SwooleProcess::signal(SIGINT, function ($signo) {
-            $this->tickTimer->stop();
+        SwooleProcess::signal(SIGINT, function () {
+            $this->workerDirector->wait();
             $this->exitMaster();
         });
         // custom signal - exit smoothly
-        SwooleProcess::signal(SIGUSR1, function ($signo) {
-            $this->tickTimer->stop();
+        SwooleProcess::signal(SIGUSR1, function () {
+            $this->workerDirector->wait();
             $this->exitMaster();
         });
         // custom signal - record process status
-        SwooleProcess::signal(SIGUSR2, function ($signo) {
+        SwooleProcess::signal(SIGUSR2, function () {
+            // TODO
         });
     }
 
@@ -116,18 +125,14 @@ class Manager
      */
     protected function registerTimer(): void
     {
-        $this->tickTimer = new TickTimerProcess([
-            // move expired job
-            new Timer\TickTimer(1000, function () {
-                $this->queue->migrateExpired();
-            }),
-            // check queue status
-            new Timer\TickTimer(1000 * 60 * 5, function () {
-                $this->checkQueueStatus();
-            }),
-        ]);
-
-        $this->tickTimer->start();
+        // move expired job
+        Timer::tick(1000, function () {
+            $this->queue->migrateExpired();
+        });
+        // check queue status
+        Timer::tick(1000 * 60 * 5, function () {
+            $this->checkQueueStatus();
+        });
     }
 
     /**
@@ -157,7 +162,7 @@ class Manager
     /**
      * Get current queue instance.
      *
-     * @return QueueInterface
+     * @return QueueInterface|Queue
      */
     public function getQueue(): QueueInterface
     {
@@ -167,36 +172,37 @@ class Manager
     /**
      * Listen the queue, to distribute job.
      *
-     * @throws RuntimeException
+     * @throws \Throwable
      */
     public function listen(): void
     {
-        $this->registerSignal();
-        $this->registerTimer();
-        $this->setupPidFile();
+        $this->setupWorker();
 
-        $director = new WorkerDirector($this);
+        Runtime::enableCoroutine();
+        Coroutine::create(function () {
+            $this->registerSignal();
+            $this->registerTimer();
+            $this->setupPidFile();
+            while (true) {
+                try {
+                    [$id, , $job] = $this->queue->pop();
 
-        while (true) {
-            try {
-                [$id, , $job] = $this->queue->pop();
-
-                if (null === $job) {
-                    sleep($this->getSleepTime());
-                    continue;
+                    if (null === $job) {
+                        sleep($this->getSleepTime());
+                        continue;
+                    }
+                    $this->workerDirector->dispatch($id, $job);
+                } catch (\Throwable $t) {
+                    $this->getLogger()->error('Job execute error, '.$t->getMessage());
                 }
-                $director->dispatch($id, $job);
-            } catch (\Throwable $t) {
-                $this->getLogger()->error('Job execute error, '.$t->getMessage());
-            }
 
-            if ($this->memoryExceeded()) {
-                $this->getLogger()->info('Memory exceeded, exit smoothly.');
-                $director->wait();
-                $this->tickTimer->stop();
-                $this->exitMaster();
+                if ($this->memoryExceeded()) {
+                    $this->getLogger()->info('Memory exceeded, exit smoothly.');
+                    $this->workerDirector->wait();
+                    $this->exitMaster();
+                }
             }
-        }
+        });
     }
 
     /**
@@ -215,6 +221,7 @@ class Manager
      * Execute job in current process.
      *
      * @param $messageId
+     * @throws \Throwable
      */
     public function executeJob($messageId): void
     {
@@ -337,6 +344,7 @@ class Manager
      */
     public function exitMaster(): void
     {
+        $this->getQueue()->getRedisPool()->flush();
         @unlink($this->getPidFile());
         exit(0);
     }

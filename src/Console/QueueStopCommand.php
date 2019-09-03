@@ -38,7 +38,7 @@ class QueueStopCommand extends AbstractCommand
         $io = new SymfonyStyle($input, $output);
         $selected = $io->choice("Select the way to quit {$channel}-queue", ['Force', 'Wait'], 'Wait');
 
-        $signal = $selected === 'Force' ? SIGKILL : SIGUSR1;
+        $signal = 'Force' === $selected ? SIGKILL : SIGUSR1;
 
         $pid = (int) file_get_contents($this->manager->getPidFile());
 

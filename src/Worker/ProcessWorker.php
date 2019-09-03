@@ -12,9 +12,6 @@ namespace Littlesqx\AintQueue\Worker;
 
 use Littlesqx\AintQueue\Helper\SwooleHelper;
 use Littlesqx\AintQueue\Manager;
-use Swoole\Coroutine;
-use Swoole\Process as SwooleProcess;
-use Swoole\Runtime;
 
 class ProcessWorker extends AbstractWorker
 {
@@ -23,32 +20,19 @@ class ProcessWorker extends AbstractWorker
     public function __construct(Manager $manager)
     {
         parent::__construct($manager, function () {
-            Runtime::enableCoroutine(true);
 
-            SwooleHelper::setProcessName($this->getTaskQueueName());
+            $this->resetConnectionPool();
 
-            SwooleProcess::signal(SIGTERM, function () {
-                $this->canContinue = false;
-                $this->manager->getLogger()->info("Worker: {$this->getName()} receive signal SIGTERM.");
-            });
-            SwooleProcess::signal(SIGUSR2, function () {
-                $this->canContinue = false;
-                $this->manager->getLogger()->info("Worker: {$this->getName()} receive signal SIGUSR2.");
-                $this->atomic->wakeup();
-            });
+            SwooleHelper::setProcessName($this->getName());
 
-            $this->initRedis();
-
-            Coroutine::create(function () {
-                while ($this->canContinue) {
-                    $messageId = $this->redis->brpop([$this->getTaskQueueName()], 0)[1] ?? 0;
-                    $this->manager->executeJobInProcess($messageId);
-                    if (!$this->canContinue) {
-                        $this->manager->getLogger()->info($this->getName().' - pid='.getmypid().' pre-stop.');
-                    }
+            while ($this->canContinue) {
+                $messageId = $this->manager->getQueue()->getReady($this->getName());
+                $this->manager->executeJobInProcess($messageId);
+                if (!$this->canContinue) {
+                    $this->manager->getLogger()->info($this->getName().' - pid='.getmypid().' pre-stop.');
                 }
-            });
-        }, true);
+            }
+        });
     }
 
     /**
@@ -61,13 +45,4 @@ class ProcessWorker extends AbstractWorker
         return 'aint-queue-process-worker'.":{$this->channel}";
     }
 
-    /**
-     * Get waiting task's queue name.
-     *
-     * @return string
-     */
-    public function getTaskQueueName(): string
-    {
-        return 'aint-queue-process-worker:task-queue'.":{$this->channel}";
-    }
 }
