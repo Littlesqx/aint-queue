@@ -44,7 +44,7 @@ class Queue extends AbstractQueue
      * Queue constructor.
      *
      * @param string $channel
-     * @param array $options
+     * @param array  $options
      *
      * @throws InvalidArgumentException
      */
@@ -157,6 +157,7 @@ class Queue extends AbstractQueue
      * @param $id
      *
      * @return mixed
+     *
      * @throws \Throwable
      * @throws RuntimeException
      */
@@ -183,6 +184,7 @@ class Queue extends AbstractQueue
      * @param int $delay
      *
      * @return bool
+     *
      * @throws \Throwable
      * @throws RuntimeException
      */
@@ -251,6 +253,7 @@ class Queue extends AbstractQueue
      * Clear current queue.
      *
      * @return mixed
+     *
      * @throws RuntimeException
      * @throws \Throwable
      */
@@ -320,6 +323,7 @@ class Queue extends AbstractQueue
      * Get current queue's size.
      *
      * @return int
+     *
      * @throws RuntimeException
      * @throws \Throwable
      */
@@ -446,6 +450,7 @@ class Queue extends AbstractQueue
     /**
      * @param string $worker
      * @param $messageId
+     *
      * @throws RuntimeException
      * @throws \Throwable
      */
@@ -465,7 +470,9 @@ class Queue extends AbstractQueue
 
     /**
      * @param string $worker
+     *
      * @return int
+     *
      * @throws RuntimeException
      * @throws \Throwable
      */

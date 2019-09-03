@@ -1,11 +1,11 @@
 <?php
 
-/**
- * This file is part of aint-queue.
+/*
+ * This file is part of the littlesqx/aint-queue.
  *
- * Copyright © 2012 - 2019 Xiaoman. All Rights Reserved.
+ * (c) littlesqx <littlesqx@gmail.com>
  *
- * Created by Shengqian <shengqian@xiaoman.cn>, on 2019/09/03.
+ * This source file is subject to the MIT license that is bundled.
  */
 
 namespace Littlesqx\AintQueue\Connection;
@@ -18,8 +18,10 @@ class PoolFactory
      * Make a connectionPool.
      *
      * @param string $poolClass
-     * @param array $options
+     * @param array  $options
+     *
      * @return PoolInterface
+     *
      * @throws InvalidArgumentException
      */
     public static function make(string $poolClass, array $options): PoolInterface

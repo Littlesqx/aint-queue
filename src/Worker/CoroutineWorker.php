@@ -42,5 +42,4 @@ class CoroutineWorker extends AbstractWorker
     {
         return 'aint-queue-coroutine-worker'.":{$this->channel}";
     }
-
 }

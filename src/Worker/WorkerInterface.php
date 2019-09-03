@@ -37,5 +37,4 @@ interface WorkerInterface
      * @return string
      */
     public function getName(): string;
-
 }

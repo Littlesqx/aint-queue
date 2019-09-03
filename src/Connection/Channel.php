@@ -1,11 +1,11 @@
 <?php
 
-/**
- * This file is part of aint-queue.
+/*
+ * This file is part of the littlesqx/aint-queue.
  *
- * Copyright © 2012 - 2019 Xiaoman. All Rights Reserved.
+ * (c) littlesqx <littlesqx@gmail.com>
  *
- * Created by Shengqian <shengqian@xiaoman.cn>, on 2019/09/03.
+ * This source file is subject to the MIT license that is bundled.
  */
 
 namespace Littlesqx\AintQueue\Connection;
@@ -42,6 +42,7 @@ class Channel
         if ($this->isCoroutine()) {
             return $this->channel->pop($timeout);
         }
+
         return !$this->queue->isEmpty() ? $this->queue->shift() : false;
     }
 

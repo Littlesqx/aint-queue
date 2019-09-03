@@ -24,7 +24,6 @@ class ProcessPoolWorker extends AbstractWorker
     public function __construct(Manager $manager)
     {
         parent::__construct($manager, function () {
-
             SwooleHelper::setProcessName($this->getName());
 
             $this->processPool = new SwooleProcessPool(4);
@@ -82,5 +81,4 @@ class ProcessPoolWorker extends AbstractWorker
     {
         return 'aint-queue-process-pool-worker'.":{$this->channel}";
     }
-
 }
