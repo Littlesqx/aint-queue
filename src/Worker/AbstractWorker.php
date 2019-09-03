@@ -10,10 +10,10 @@
 
 namespace Littlesqx\AintQueue\Worker;
 
+use Littlesqx\AintQueue\Connection\Pool\RedisPool;
+use Littlesqx\AintQueue\Connection\PoolFactory;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Manager;
-use Predis\Client;
-use Swoole\Atomic;
 use Swoole\Process as SwooleProcess;
 
 abstract class AbstractWorker implements WorkerInterface
@@ -34,11 +34,6 @@ abstract class AbstractWorker implements WorkerInterface
     protected $pid;
 
     /**
-     * @var Client
-     */
-    protected $redis;
-
-    /**
      * @var string
      */
     protected $channel;
@@ -48,14 +43,10 @@ abstract class AbstractWorker implements WorkerInterface
      */
     protected $canContinue = true;
 
-    protected $atomic;
-
     public function __construct(Manager $manager, \Closure $closure, bool $enableCoroutine = false)
     {
         $this->manager = $manager;
         $this->channel = $manager->getQueue()->getChannel();
-
-        $this->initRedis();
 
         SwooleProcess::signal(SIGCHLD, function () {
             while ($ret = SwooleProcess::wait(false)) {
@@ -63,17 +54,13 @@ abstract class AbstractWorker implements WorkerInterface
             }
         });
 
-        $this->atomic = new Atomic();
-
         $this->process = new SwooleProcess($closure, false, 1, $enableCoroutine);
     }
 
-    /**
-     * Init redis connection.
-     */
-    protected function initRedis(): void
+    public function resetConnectionPool()
     {
-        $this->redis = new Client(['read_write_timeout' => 0]);
+        $options = $this->manager->getOptions()['driver'] ?? [];
+        $this->manager->getQueue()->setRedisPool(PoolFactory::make(RedisPool::class, $options));
     }
 
     /**
@@ -124,7 +111,7 @@ abstract class AbstractWorker implements WorkerInterface
 
         SwooleProcess::kill($this->pid, SIGUSR2);
 
-        return false !== $this->atomic->wait(2);
+        return true;
     }
 
     /**
@@ -134,7 +121,7 @@ abstract class AbstractWorker implements WorkerInterface
      */
     public function receive($messageId): void
     {
-        $this->redis->lpush($this->getTaskQueueName(), [$messageId]);
+        $this->manager->getQueue()->ready($this->getName(), $messageId);
     }
 
     /**

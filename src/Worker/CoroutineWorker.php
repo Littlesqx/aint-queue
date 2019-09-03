@@ -10,6 +10,7 @@
 
 namespace Littlesqx\AintQueue\Worker;
 
+use Littlesqx\AintQueue\Helper\SwooleHelper;
 use Littlesqx\AintQueue\Manager;
 use Swoole\Coroutine;
 use Swoole\Runtime;
@@ -19,13 +20,14 @@ class CoroutineWorker extends AbstractWorker
     public function __construct(Manager $manager)
     {
         parent::__construct($manager, function () {
+            $this->resetConnectionPool();
             // required
-            Runtime::enableCoroutine(true);
+            Runtime::enableCoroutine();
 
-            $this->initRedis();
+            SwooleHelper::setProcessName($this->getName());
 
             while ($this->canContinue) {
-                $messageId = $this->redis->brpop([$this->getTaskQueueName()], 0)[1] ?? 0;
+                $messageId = $this->manager->getQueue()->getReady($this->getName());
                 Coroutine::create([$this->manager, 'executeJob'], $messageId);
             }
         }, true);
@@ -41,13 +43,4 @@ class CoroutineWorker extends AbstractWorker
         return 'aint-queue-coroutine-worker'.":{$this->channel}";
     }
 
-    /**
-     * Get waiting task's queue name.
-     *
-     * @return string
-     */
-    public function getTaskQueueName(): string
-    {
-        return 'aint-queue-coroutine-worker:task-queue'.":{$this->channel}";
-    }
 }
