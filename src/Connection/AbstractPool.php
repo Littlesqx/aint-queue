@@ -45,11 +45,12 @@ abstract class AbstractPool implements PoolInterface
         $num = $this->channel->length();
         try {
             if (0 === $num && $this->currentConnectionNum < ($this->options['size'] ?? 50)) {
-                $this->currentConnectionNum++;
+                ++$this->currentConnectionNum;
+
                 return $this->createConnection();
             }
         } catch (\Throwable $t) {
-            $this->currentConnectionNum--;
+            --$this->currentConnectionNum;
             throw $t;
         }
 

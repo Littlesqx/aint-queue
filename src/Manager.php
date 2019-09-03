@@ -15,7 +15,6 @@ use Littlesqx\AintQueue\Event\WarningHandler\WarningHandlerInterface;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
-use Littlesqx\AintQueue\Timer\TickTimerProcess;
 use Psr\Log\LoggerInterface;
 use Swoole\Coroutine;
 use Swoole\Process as SwooleProcess;
@@ -221,6 +220,7 @@ class Manager
      * Execute job in current process.
      *
      * @param $messageId
+     *
      * @throws \Throwable
      */
     public function executeJob($messageId): void
