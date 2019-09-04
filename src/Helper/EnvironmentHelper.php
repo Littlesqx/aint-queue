@@ -42,4 +42,14 @@ class EnvironmentHelper
     {
         return $_SERVER['SCRIPT_FILENAME'] ?? null;
     }
+
+    /**
+     * Get current process memory usage.
+     *
+     * @return float
+     */
+    public static function getCurrentMemoryUsage(): float
+    {
+        return memory_get_usage(true) / 1024 / 1024;
+    }
 }
