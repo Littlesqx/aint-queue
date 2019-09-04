@@ -80,12 +80,12 @@ $queue = \Littlesqx\AintQueue\Driver\DriverFactory::make(
     $config['default']['driver']
 );
 
-// push an sync job
+// push a sync job
 $queue->push(function () {
     echo "Hello aint-queue\n";
 });
 
-// push an sync and delay job
+// push a sync and delay job
 $queue->delay(10)->push(function () {
     echo "Hello aint-queue delayed\n";
 });
