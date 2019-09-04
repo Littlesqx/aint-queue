@@ -353,9 +353,9 @@ class Manager
      */
     public function exitMaster(): void
     {
+        Timer::clearAll();
         $this->listening = false;
         @unlink($this->getPidFile());
-        exit(0);
     }
 
     /**

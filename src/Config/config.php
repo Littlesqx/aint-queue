@@ -25,7 +25,7 @@ return [
                 'read_write_timeout' => 0,
             ],
         ],
-        'pid_path' => '/home/vagrant/aint-queue',
+        'pid_path' => '/var/run/aint-queue',
         'memory_limit' => 512, // Mb
         'sleep_seconds' => 3,
         'warning_thresholds' => [
