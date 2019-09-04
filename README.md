@@ -129,6 +129,11 @@ Available commands:
   queue:stop    Stop listening the queue.
 ```
 
+## Testing
+
+```bash
+composer test
+```
 ## Contributing
 
 You can contribute in one of three ways:
