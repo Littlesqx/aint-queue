@@ -8,29 +8,38 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
-namespace Littlesqx\AintQueue\Test;
+namespace Littlesqx\AintQueue\Example;
 
-use Littlesqx\AintQueue\CoJobInterface;
 use Littlesqx\AintQueue\QueueInterface;
-use Swoole\Coroutine;
+use Littlesqx\AintQueue\SyncJobInterface;
 
-class CoJob implements CoJobInterface
+class SyncJob implements SyncJobInterface
 {
     /**
      * Execute current job.
      *
      * @param QueueInterface $queue
      *
-     * @return mixed|void
+     * @return mixed
      *
      * @throws \Exception
      */
     public function handle(QueueInterface $queue)
     {
-        $int = random_int(1, 10);
-        echo "coroutine job sleep#{$int} begin \n";
-        Coroutine::sleep($int);
-        echo "coroutine job sleep#{$int} end \n";
+        $int = random_int(1, 5);
+        echo "sync job sleep#{$int} begin \n";
+        sleep($int);
+        echo "sync job sleep#{$int} end \n";
+    }
+
+    /**
+     * Get current job's max execution time(seconds).
+     *
+     * @return int
+     */
+    public function getTtr(): int
+    {
+        return 30;
     }
 
     /**
