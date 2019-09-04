@@ -91,15 +91,17 @@ $queue->delay(10)->push(function () {
 });
 
 // And class job are allowed.
-// 1. Create a class which implements JobInterface, you can see the example in `/src/Test`.
+// 1. Create a class which implements JobInterface, you can see the example in `/src/Example`.
 // 2. Different instance will consumed by corresponding consumers (single-process, process-pool and co-process).
 // 3. Noted that job pushed should be un-serialize by queue-listener, this means queue-pusher and queue-listener are required to in the same project.                                          
-
+// 4. example: $queue->push(new \Littlesqx\AintQueue\Example\SyncJob());
 ```
 
-### Manager listener
+### Manage listener
 
-/vendor/bin/aint-queue queue
+```bash
+vendor/bin/aint-queue queue
+```
 
 ```bash
 Console Tool
@@ -135,7 +137,7 @@ You can contribute in one of three ways:
 2. Answer questions or fix bugs on the [issue tracker](https://github.com/littlesqx/aint-queue/issues).
 3. Contribute new features or update the wiki.
 
-_The code contribution process is not very formal. You just need to make sure that you follow the PSR-0, PSR-1, and PSR-2 coding guidelines. Any new code contributions must be accompanied by unit tests where applicable._
+_The code contribution process is not very formal. You just need to make sure that you follow the PSR-2, PSR-12 coding guidelines. Any new code contributions must be accompanied by unit tests where applicable._
 
 ## License
 

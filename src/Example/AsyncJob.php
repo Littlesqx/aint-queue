@@ -8,12 +8,12 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
-namespace Littlesqx\AintQueue\Test;
+namespace Littlesqx\AintQueue\Example;
 
+use Littlesqx\AintQueue\AsyncJobInterface;
 use Littlesqx\AintQueue\QueueInterface;
-use Littlesqx\AintQueue\SyncJobInterface;
 
-class SyncJob implements SyncJobInterface
+class AsyncJob implements AsyncJobInterface
 {
     /**
      * Execute current job.
@@ -27,19 +27,9 @@ class SyncJob implements SyncJobInterface
     public function handle(QueueInterface $queue)
     {
         $int = random_int(1, 5);
-        echo "sync job sleep#{$int} begin \n";
+        echo "async job sleep#{$int} begin \n";
         sleep($int);
-        echo "sync job sleep#{$int} end \n";
-    }
-
-    /**
-     * Get current job's max execution time(seconds).
-     *
-     * @return int
-     */
-    public function getTtr(): int
-    {
-        return 30;
+        echo "async job sleep#{$int} end \n";
     }
 
     /**

@@ -8,28 +8,29 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
-namespace Littlesqx\AintQueue\Test;
+namespace Littlesqx\AintQueue\Example;
 
-use Littlesqx\AintQueue\AsyncJobInterface;
+use Littlesqx\AintQueue\CoJobInterface;
 use Littlesqx\AintQueue\QueueInterface;
+use Swoole\Coroutine;
 
-class AsyncJob implements AsyncJobInterface
+class CoJob implements CoJobInterface
 {
     /**
      * Execute current job.
      *
      * @param QueueInterface $queue
      *
-     * @return mixed
+     * @return mixed|void
      *
      * @throws \Exception
      */
     public function handle(QueueInterface $queue)
     {
-        $int = random_int(1, 5);
-        echo "async job sleep#{$int} begin \n";
-        sleep($int);
-        echo "async job sleep#{$int} end \n";
+        $int = random_int(1, 10);
+        echo "coroutine job sleep#{$int} begin \n";
+        Coroutine::sleep($int);
+        echo "coroutine job sleep#{$int} end \n";
     }
 
     /**
