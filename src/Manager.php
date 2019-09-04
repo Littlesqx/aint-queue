@@ -220,7 +220,7 @@ class Manager
      */
     public function memoryExceeded(): bool
     {
-        $usage = (memory_get_usage(true) / 1024 / 1024);
+        $usage = EnvironmentHelper::getCurrentMemoryUsage();
 
         return $usage >= $this->getMemoryLimit();
     }

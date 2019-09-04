@@ -41,7 +41,7 @@ return [
         ],
         'pid_path' => '/var/run/aint-queue',
         'memory_limit' => 512, // Mb
-        'sleep_seconds' => 0,
+        'sleep_seconds' => 3,
         'warning_thresholds' => [
             'waiting_job_number' => 100,
             'ready_job_number' => 100,
