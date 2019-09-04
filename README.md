@@ -91,6 +91,9 @@ $queue->delay(10)->push(function () {
 });
 
 // And class job are allowed.
+// 1. Create a class which implements JobInterface, you can see the example in `/src/Test`.
+// 2. Different instance will consumed by corresponding consumers (single-process, process-pool and co-process).
+// 3. Noted that job pushed should be un-serialize by queue-listener, this means queue-pusher and queue-listener are required to in the same project.                                          
 
 ```
 
