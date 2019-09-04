@@ -27,7 +27,7 @@ return [
         ],
         'pid_path' => '/home/vagrant/aint-queue',
         'memory_limit' => 512, // Mb
-        'sleep_seconds' => 0,
+        'sleep_seconds' => 3,
         'warning_thresholds' => [
             'waiting_job_number' => 100,
             'ready_job_number' => 100,
@@ -36,11 +36,11 @@ return [
         ],
         'worker' => [
             'process_worker' => [
-                'enable' => false,
+                'enable' => true,
                 'max_execute_seconds' => 0,
             ],
             'process_pool_worker' => [
-                'enable' => true,
+                'enable' => false,
                 'memory_limit' => 512, // Mb
                 'worker_number' => 4,
             ],

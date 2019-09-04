@@ -44,6 +44,8 @@ class Manager
      */
     protected $workerDirector;
 
+    protected $listening = false;
+
     public function __construct(QueueInterface $driver, array $options = [])
     {
         $this->queue = $driver;
@@ -177,17 +179,24 @@ class Manager
     {
         $this->setupWorker();
 
+        $this->registerSignal();
+
+        $this->listening = true;
+
+        // required
         Runtime::enableCoroutine();
         Coroutine::create(function () {
-            $this->registerSignal();
+            Coroutine::defer(function () {
+                $this->getQueue()->getRedisPool()->flush();
+            });
             $this->registerTimer();
             $this->setupPidFile();
-            while (true) {
+            while ($this->listening) {
                 try {
                     [$id, , $job] = $this->queue->pop();
 
                     if (null === $job) {
-                        sleep($this->getSleepTime());
+                        Coroutine::sleep($this->getSleepTime());
                         continue;
                     }
                     $this->workerDirector->dispatch($id, $job);
@@ -344,7 +353,7 @@ class Manager
      */
     public function exitMaster(): void
     {
-        $this->getQueue()->getRedisPool()->flush();
+        $this->listening = false;
         @unlink($this->getPidFile());
         exit(0);
     }
