@@ -10,6 +10,7 @@
 
 namespace Littlesqx\AintQueue\Worker;
 
+use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Littlesqx\AintQueue\Helper\SwooleHelper;
 use Littlesqx\AintQueue\Manager;
 use Swoole\Process\Pool as SwooleProcessPool;
@@ -26,7 +27,8 @@ class ProcessPoolWorker extends AbstractWorker
         parent::__construct($manager, function () {
             SwooleHelper::setProcessName($this->getName());
 
-            $this->processPool = new SwooleProcessPool(4);
+            $workerNum = $this->manager->getOptions()['worker']['process_pool_worker']['worker_number'] ?? 4;
+            $this->processPool = new SwooleProcessPool($workerNum);
             $this->processPool->on('WorkerStart', function ($pool, $workerId) {
                 $this->workerStart($pool, $workerId);
             });
@@ -55,8 +57,9 @@ class ProcessPoolWorker extends AbstractWorker
         while ($this->canContinue) {
             $messageId = $this->manager->getQueue()->getReady($this->getName());
             $this->manager->executeJob($messageId);
-            if (!$this->canContinue) {
-                $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' start.');
+            $limit = $this->manager->getOptions()['worker']['process_pool_worker']['worker_number'] ?? 512;
+            if (!$this->canContinue && $limit > EnvironmentHelper::getCurrentMemoryUsage()) {
+                $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' stop.');
             }
         }
     }
