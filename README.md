@@ -13,6 +13,11 @@
 $ composer require littlesqx/aint-queue -vvv
 ```
 
+## Documentation
+
+- [中文](./docs/zh-CN/overview.md)
+- English
+
 ## Usage
 
 ### Config
@@ -43,10 +48,9 @@ return [
         'memory_limit' => 512, // Mb
         'sleep_seconds' => 3,
         'warning_thresholds' => [
+            'warning_handler' => [],
             'waiting_job_number' => 100,
             'ready_job_number' => 100,
-        ],
-        'warning_handler' => [
         ],
         'worker' => [
             'process_worker' => [
