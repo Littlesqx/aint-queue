@@ -137,14 +137,16 @@ class Queue extends AbstractQueue
 
         $id = $redis->rpop("{$this->getChannel()}:waiting");
 
-        // reserved: {id} => attempts
-        $redis->eval(
-            LuaScripts::reserve(),
-            2,
-            "{$this->getChannel()}:reserved",
-            "{$this->getChannel()}:attempts",
-            $id
-        );
+        if ($id) {
+            // reserved: {id} => attempts
+            $redis->eval(
+                LuaScripts::reserve(),
+                2,
+                "{$this->getChannel()}:reserved",
+                "{$this->getChannel()}:attempts",
+                $id
+            );
+        }
 
         $this->redisPool->release($redis);
 
