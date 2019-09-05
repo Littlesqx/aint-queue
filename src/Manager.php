@@ -131,7 +131,7 @@ class Manager
             $this->queue->migrateExpired();
         });
         // check queue status
-        Timer::tick(1000 * 5, function () {
+        Timer::tick(1000 * 60 * 5, function () {
             $this->checkQueueStatus();
         });
     }
