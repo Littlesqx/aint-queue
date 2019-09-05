@@ -385,7 +385,15 @@ class Manager
      */
     protected function checkQueueStatus()
     {
-        [$waiting, $delayed, $reserved, $done, $total] = $this->getQueue()->status();
+        try {
+            [$waiting, $delayed, $reserved, $done, $total] = $this->getQueue()->status();
+        } catch (\Throwable $t) {
+            $this->getLogger()->error('Error when getting queue\'s status, '.$t->getMessage(), [
+                'driver' => get_class($this->queue),
+                'channel' => $this->queue->getChannel(),
+            ]);
+            return;
+        }
 
         $maxWaiting = $this->getOptions()['warning_thresholds']['waiting_job_number'] ?? PHP_INT_MAX;
 
