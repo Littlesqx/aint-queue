@@ -9,6 +9,7 @@
  */
 
 use Littlesqx\AintQueue\Driver\Redis\Queue as RedisQueue;
+use Littlesqx\AintQueue\Example\JobOverflowEvent;
 
 return [
     // channel => [...config]
@@ -29,10 +30,11 @@ return [
         'memory_limit' => 512, // Mb
         'sleep_seconds' => 3,
         'warning_thresholds' => [
-            'waiting_job_number' => 100,
-            'ready_job_number' => 100,
-        ],
-        'warning_handler' => [
+            'warning_handler' => [
+                JobOverflowEvent::class,
+            ],
+            'waiting_job_number' => 50,
+            'ready_job_number' => 50,
         ],
         'worker' => [
             'process_worker' => [

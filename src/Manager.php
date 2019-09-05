@@ -11,7 +11,7 @@
 namespace Littlesqx\AintQueue;
 
 use Littlesqx\AintQueue\Driver\Redis\Queue;
-use Littlesqx\AintQueue\Event\WarningHandler\WarningHandlerInterface;
+use Littlesqx\AintQueue\Event\HandlerInterface;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
@@ -131,7 +131,7 @@ class Manager
             $this->queue->migrateExpired();
         });
         // check queue status
-        Timer::tick(1000 * 60 * 5, function () {
+        Timer::tick(1000 * 5, function () {
             $this->checkQueueStatus();
         });
     }
@@ -186,9 +186,6 @@ class Manager
         // required
         Runtime::enableCoroutine();
         Coroutine::create(function () {
-            Coroutine::defer(function () {
-                $this->getQueue()->getRedisPool()->flush();
-            });
             $this->registerTimer();
             $this->setupPidFile();
             while ($this->listening) {
@@ -392,24 +389,21 @@ class Manager
 
         $maxWaiting = $this->getOptions()['warning_thresholds']['waiting_job_number'] ?? PHP_INT_MAX;
 
-        if (count($waiting) >= $maxWaiting) {
-            $handlers = $this->getOptions()['warning_handler'] ?? [];
+        if ($waiting >= $maxWaiting) {
+            $handlers = $this->getOptions()['warning_thresholds']['warning_handler'] ?? [];
             foreach ($handlers as $handlerClass) {
-                if (class_exists($handlerClass)) {
-                    $handler = new $handlerClass();
-                    if ($handler instanceof WarningHandlerInterface) {
-                        try {
-                            $type = 'waiting_job_overflow';
-                            $message = 'current waiting jobs\' number is '.$waiting.'!';
-                            $handler->handle($type, $message);
-                        } catch (\Throwable $t) {
-                            $this->getLogger()->error('Handler error, '.$t->getMessage(), [
-                                'driver' => get_class($this->queue),
-                                'channel' => $this->queue->getChannel(),
-                                'warning_type' => $type,
-                                'warning_message' => $message,
-                            ]);
-                        }
+                if (class_exists($handlerClass) && ($handler = new $handlerClass())
+                    && $handler instanceof HandlerInterface
+                ) {
+                    try {
+                        $message = 'current waiting jobs\' number is '.$waiting.'!';
+                        $handler->handle($message, null, compact('waiting', 'delayed', 'reserved', 'done', 'total'));
+                    } catch (\Throwable $t) {
+                        $this->getLogger()->error('Handler error, '.$t->getMessage(), [
+                            'driver' => get_class($this->queue),
+                            'channel' => $this->queue->getChannel(),
+                            'warning_message' => $message,
+                        ]);
                     }
                 }
             }
