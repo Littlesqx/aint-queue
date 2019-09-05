@@ -104,7 +104,7 @@ $queue->delay(10)->push(function () {
 ### Manage listener
 
 ```bash
-vendor/bin/aint-queue queue
+vendor/bin/aint-queue
 ```
 
 ```bash
