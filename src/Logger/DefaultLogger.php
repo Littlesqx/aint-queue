@@ -24,7 +24,7 @@ class DefaultLogger implements LoggerInterface
 
     public function __construct()
     {
-        $this->executor = new Logger('anit-queue-default');
+        $this->executor = new Logger('aint-queue-default');
         $handler = new StreamHandler('/tmp/aint-queue.log');
         $handler->setFormatter(new LineFormatter());
         $this->executor->setHandlers([$handler]);
