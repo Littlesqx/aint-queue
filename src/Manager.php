@@ -264,6 +264,8 @@ class Manager
             if ($job instanceof JobInterface && $job->canRetry($attempts, $t)) {
                 $delay = max($job->getNextRetryTime($attempts) - time(), 0);
                 $this->queue->release($id, $delay);
+            } else {
+                $this->queue->failed($id);
             }
             $this->getLogger()->error(get_class($t).': '.$t->getMessage(), [
                 'driver' => get_class($this->queue),
@@ -386,7 +388,7 @@ class Manager
     protected function checkQueueStatus()
     {
         try {
-            [$waiting, $delayed, $reserved, $done, $total] = $this->getQueue()->status();
+            [$waiting, $delayed, $reserved, $done, $failed, $total] = $this->getQueue()->status();
         } catch (\Throwable $t) {
             $this->getLogger()->error('Error when getting queue\'s status, '.$t->getMessage(), [
                 'driver' => get_class($this->queue),
@@ -405,7 +407,7 @@ class Manager
                 ) {
                     try {
                         $message = 'current waiting jobs\' number is '.$waiting.'!';
-                        $handler->handle($message, null, compact('waiting', 'delayed', 'reserved', 'done', 'total'));
+                        $handler->handle($message, null, compact('waiting', 'delayed', 'reserved', 'done', 'failed', 'total'));
                     } catch (\Throwable $t) {
                         $this->getLogger()->error('Handler error, '.$t->getMessage(), [
                             'driver' => get_class($this->queue),

@@ -83,4 +83,6 @@ abstract class AbstractQueue implements QueueInterface
     }
 
     abstract public function getReady(string $worker);
+
+    abstract public function failed($id);
 }

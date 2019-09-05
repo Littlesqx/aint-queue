@@ -35,6 +35,8 @@ class Queue extends AbstractQueue
      */
     const STATUS_DONE = 3;
 
+    const STATUS_FAILED = 4;
+
     /**
      * @var RedisPool
      */
@@ -242,6 +244,10 @@ class Queue extends AbstractQueue
             $status = self::STATUS_RESERVED;
         }
 
+        if ($redis->hexists("{$this->getChannel()}:failed", $id)) {
+            $status = self::STATUS_FAILED;
+        }
+
         if ($redis->hexists("{$this->getChannel()}:messages", $id)) {
             $status = self::STATUS_WAITING;
         }
@@ -439,13 +445,14 @@ class Queue extends AbstractQueue
         $waiting = $redis->llen("{$this->getChannel()}:waiting");
         $delayed = $redis->zcount("{$this->getChannel()}:delayed", '-inf', '+inf');
         $reserved = $redis->hlen("{$this->getChannel()}:reserved");
+        $failed = $redis->hlen("{$this->getChannel()}:failed");
         $total = $redis->get("{$this->getChannel()}:message_id") ?? 0;
 
         $this->redisPool->release($redis);
 
-        $done = $total - $waiting - $delayed - $reserved;
+        $done = $total - $waiting - $delayed - $reserved - $failed;
 
-        return [$waiting, $delayed, $reserved, $done, $total];
+        return [$waiting, $delayed, $reserved, $done, $failed, $total];
     }
 
     /**
@@ -491,5 +498,25 @@ class Queue extends AbstractQueue
         $this->redisPool->release($redis);
 
         return $messageId;
+    }
+
+    /**
+     * @param $id
+     * @throws RuntimeException
+     * @throws \Throwable
+     */
+    public function failed($id)
+    {
+        /** @var Client $redis */
+        $redis = $this->redisPool->get();
+
+        if (!$redis instanceof Client) {
+            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
+        }
+
+        $redis->hdel("{$this->getChannel()}:reserved", $id);
+        $redis->hset("{$this->getChannel()}:failed", $id, time());
+
+        $this->redisPool->release($redis);
     }
 }
