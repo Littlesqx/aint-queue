@@ -30,7 +30,7 @@ class QueueStatusCommand extends AbstractCommand
     {
         $channel = $input->getOption('channel');
 
-        [$waiting, $delayed, $reserved, $done, $total] = $this->manager->getQueue()->status();
+        [$waiting, $delayed, $reserved, $done, $failed, $total] = $this->manager->getQueue()->status();
 
         $masterStatus = "The master-process of {$channel}-queue is ";
         if ($this->manager->isRunning()) {
@@ -42,8 +42,8 @@ class QueueStatusCommand extends AbstractCommand
 
         $table = new Table($output);
         $table->setStyle('box')
-            ->setHeaders(['waiting', 'delayed', 'reserved', 'done', 'total'])
-            ->setRows([["<comment>$waiting</comment>", "<comment>$delayed</comment>", $reserved, "<info>$done</info>", $total]]);
+            ->setHeaders(['waiting', 'delayed', 'reserved', 'done', 'failed', 'total'])
+            ->setRows([["<comment>$waiting</comment>", "<comment>$delayed</comment>", $reserved, "<info>$done</info>", "<comment>$failed</comment>", $total]]);
 
         $table->render();
     }
