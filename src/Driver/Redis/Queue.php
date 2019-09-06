@@ -502,6 +502,7 @@ class Queue extends AbstractQueue
 
     /**
      * @param $id
+     *
      * @throws RuntimeException
      * @throws \Throwable
      */

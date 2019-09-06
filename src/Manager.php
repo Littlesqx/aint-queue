@@ -394,6 +394,7 @@ class Manager
                 'driver' => get_class($this->queue),
                 'channel' => $this->queue->getChannel(),
             ]);
+
             return;
         }
 

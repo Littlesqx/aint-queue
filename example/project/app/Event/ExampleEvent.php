@@ -1,11 +1,11 @@
 <?php
 
-/**
- * This file is part of aint-queue.
+/*
+ * This file is part of the littlesqx/aint-queue.
  *
- * Copyright © 2012 - 2019 Xiaoman. All Rights Reserved.
+ * (c) littlesqx <littlesqx@gmail.com>
  *
- * Created by Shengqian <shengqian@xiaoman.cn>, on 2019/09/06.
+ * This source file is subject to the MIT license that is bundled.
  */
 
 namespace App\Event;
@@ -14,7 +14,6 @@ use Littlesqx\AintQueue\Event\HandlerInterface;
 
 class ExampleEvent implements HandlerInterface
 {
-
     /**
      * Handle event.
      *

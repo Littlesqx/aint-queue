@@ -8,8 +8,8 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
-use Littlesqx\AintQueue\Driver\Redis\Queue as RedisQueue;
 use App\Event\ExampleEvent;
+use Littlesqx\AintQueue\Driver\Redis\Queue as RedisQueue;
 
 return [
     // channel => [...config]
