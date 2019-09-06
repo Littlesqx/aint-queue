@@ -1,35 +1,34 @@
 <?php
 
-/*
- * This file is part of the littlesqx/aint-queue.
+/**
+ * This file is part of aint-queue.
  *
- * (c) littlesqx <littlesqx@gmail.com>
+ * Copyright © 2012 - 2019 Xiaoman. All Rights Reserved.
  *
- * This source file is subject to the MIT license that is bundled.
+ * Created by Shengqian <shengqian@xiaoman.cn>, on 2019/09/06.
  */
 
-namespace Littlesqx\AintQueue\Example;
+namespace App\Job;
 
-use Littlesqx\AintQueue\AsyncJobInterface;
 use Littlesqx\AintQueue\QueueInterface;
+use Littlesqx\AintQueue\SyncJobInterface;
 
-class AsyncJob implements AsyncJobInterface
+class SyncJob implements SyncJobInterface
 {
+
     /**
      * Execute current job.
      *
      * @param QueueInterface $queue
      *
      * @return mixed
-     *
-     * @throws \Exception
      */
     public function handle(QueueInterface $queue)
     {
         $int = random_int(1, 5);
-        echo "async job sleep#{$int} begin \n";
+        echo "sync job sleep#{$int} begin \n";
         sleep($int);
-        echo "async job sleep#{$int} end \n";
+        echo "sync job sleep#{$int} end \n";
     }
 
     /**
@@ -42,7 +41,7 @@ class AsyncJob implements AsyncJobInterface
      */
     public function canRetry(int $attempt, $error): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -54,6 +53,16 @@ class AsyncJob implements AsyncJobInterface
      */
     public function getNextRetryTime(int $attempt): int
     {
-        return time() + 60 * $attempt;
+        return time() + 60;
+    }
+
+    /**
+     * Get current job's max execution time(seconds).
+     *
+     * @return int
+     */
+    public function getTtr(): int
+    {
+        return 60;
     }
 }
