@@ -1,3 +1,9 @@
+#### Install
+
+```bash
+composer install
+```
+
 #### Run Listener
 
 ```bash
