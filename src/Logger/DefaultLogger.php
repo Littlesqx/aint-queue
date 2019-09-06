@@ -26,8 +26,9 @@ class DefaultLogger implements LoggerInterface
     {
         $this->executor = new Logger('aint-queue-default');
         $handler = new StreamHandler('/tmp/aint-queue.log');
+        $stdoutHandler = new StreamHandler(STDOUT);
         $handler->setFormatter(new LineFormatter());
-        $this->executor->setHandlers([$handler]);
+        $this->executor->setHandlers([$handler, $stdoutHandler]);
     }
 
     /**
