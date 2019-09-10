@@ -79,7 +79,6 @@ return [
 // $config = [...];
 // or $config = require .../config.php;
 $queue = \Littlesqx\AintQueue\Driver\DriverFactory::make(
-    \Littlesqx\AintQueue\Driver\Redis\Queue::class,
     'default',
     $config['default']['driver']
 );

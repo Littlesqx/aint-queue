@@ -18,7 +18,6 @@ class DriverFactory
     /**
      * Make a instance of QueueInterface.
      *
-     * @param string $driverClass
      * @param string $channel
      * @param array  $options
      *
@@ -26,8 +25,9 @@ class DriverFactory
      *
      * @throws InvalidDriverException
      */
-    public static function make(string $driverClass, string $channel, array $options = []): QueueInterface
+    public static function make(string $channel, array $options = []): QueueInterface
     {
+        $driverClass = $options['class'] ?? '';
         if (!class_exists($driverClass)) {
             throw new InvalidDriverException(sprintf('[Error] class %s is not found.', $driverClass));
         }

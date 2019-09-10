@@ -57,7 +57,7 @@ abstract class AbstractCommand extends Command
 
         $driverOptions = $options['driver'] ?? [];
 
-        $driver = DriverFactory::make($driverOptions['class'] ?? '', $channel, $driverOptions['connection'] ?? []);
+        $driver = DriverFactory::make($channel, $driverOptions['connection'] ?? []);
 
         $this->manager = new Manager($driver, $options);
     }
