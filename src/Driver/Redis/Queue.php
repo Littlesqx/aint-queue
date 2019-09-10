@@ -538,7 +538,7 @@ class Queue extends AbstractQueue
         }
 
         $ids = $redis->hgetall("{$this->getChannel()}:reserved");
-        foreach ($ids as $id) {
+        foreach ($ids as $id => $attempts) {
             $this->release($id);
         }
 
