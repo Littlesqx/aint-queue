@@ -10,6 +10,7 @@
 
 namespace Littlesqx\AintQueue\Console;
 
+use Littlesqx\AintQueue\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -27,6 +28,9 @@ class QueueListenCommand extends AbstractCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        if ($this->manager->isRunning()) {
+            throw new RuntimeException(sprintf('[Error] Listener for queue %s has been started.', $input->getOption('channel')));
+        }
         // blocking
         $this->manager->listen();
     }
