@@ -195,6 +195,8 @@ class Manager
                     [$id, , $job] = $this->queue->pop();
 
                     if (null === $job) {
+                        $this->getLogger()->error('Invalid job, id = '.$id);
+                        $this->getQueue()->failed($id);
                         Coroutine::sleep($this->getSleepTime());
                         continue;
                     }

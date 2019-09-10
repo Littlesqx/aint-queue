@@ -14,14 +14,13 @@ use App\Job\AsyncJob;
 use App\Job\CoJob;
 use App\Job\SyncJob;
 use Littlesqx\AintQueue\Driver\DriverFactory;
-use Littlesqx\AintQueue\Driver\Redis\Queue;
 
 $config = require __DIR__.'/../config/aint-queue.php';
 
 $channel = 'example';
-$driverOption = $config[$channel] ?? [];
+$driverOption = $config[$channel]['driver'] ?? [];
 
-$queue = DriverFactory::make(Queue::class, $channel, $driverOption);
+$queue = DriverFactory::make($channel, $driverOption);
 
 $queue->push(function () {
     echo "Hello AintQueue\n";
