@@ -198,8 +198,9 @@ class Manager
                         if ($id) {
                             $this->getLogger()->error('Invalid job, id = '.$id);
                             $this->getQueue()->failed($id);
+                        } else {
+                            Coroutine::sleep($this->getSleepTime());
                         }
-                        Coroutine::sleep($this->getSleepTime());
                         continue;
                     }
                     $this->workerDirector->dispatch($id, $job);
