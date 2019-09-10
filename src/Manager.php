@@ -181,6 +181,8 @@ class Manager
 
         $this->registerSignal();
 
+        $this->getQueue()->retryReserved();
+
         $this->listening = true;
 
         // required

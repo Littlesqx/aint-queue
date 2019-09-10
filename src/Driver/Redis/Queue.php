@@ -520,4 +520,28 @@ class Queue extends AbstractQueue
 
         $this->redisPool->release($redis);
     }
+
+    /**
+     * Retry reserved job (only called when listener restart.)
+     *
+     * @throws RuntimeException
+     *
+     * @throws \Throwable
+     */
+    public function retryReserved()
+    {
+        /** @var Client $redis */
+        $redis = $this->redisPool->get();
+
+        if (!$redis instanceof Client) {
+            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
+        }
+
+        $ids = $redis->hgetall("{$this->getChannel()}:reserved");
+        foreach ($ids as $id) {
+            $this->release($id);
+        }
+
+        $this->redisPool->release($redis);
+    }
 }
