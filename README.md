@@ -76,12 +76,11 @@ return [
 ```php
 <?php
 
+use Littlesqx\AintQueue\Driver\DriverFactory;
+
 // $config = [...];
 // or $config = require .../config.php;
-$queue = \Littlesqx\AintQueue\Driver\DriverFactory::make(
-    'default',
-    $config['default']['driver']
-);
+$queue = DriverFactory::make('default', $config['default']['driver']);
 
 // push a sync job
 $queue->push(function () {
@@ -95,9 +94,9 @@ $queue->delay(10)->push(function () {
 
 // And class job are allowed.
 // 1. Create a class which implements JobInterface, you can see the example in `/src/Example`.
-// 2. Different instance will consumed by corresponding consumers (single-process, process-pool and co-process).
+// 2. Different instance will be consumed by corresponding consumers (single-process, process-pool and co-process).
 // 3. Noted that job pushed should be un-serialize by queue-listener, this means queue-pusher and queue-listener are required to in the same project.                                          
-// 4. example: $queue->push(new \Littlesqx\AintQueue\Example\SyncJob());
+// 4. You can see more examples in `example` directory.
 ```
 
 ### Manage listener
