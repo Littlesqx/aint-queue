@@ -105,11 +105,6 @@ class Manager
             $this->workerDirector->wait();
             $this->exitMaster();
         });
-        // ctrl + c
-        SwooleProcess::signal(SIGINT, function () {
-            $this->workerDirector->wait();
-            $this->exitMaster();
-        });
         // custom signal - exit smoothly
         SwooleProcess::signal(SIGUSR1, function () {
             $this->workerDirector->wait();

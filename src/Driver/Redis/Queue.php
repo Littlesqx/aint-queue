@@ -137,7 +137,7 @@ class Queue extends AbstractQueue
             throw new RuntimeException('[Error] can not pop a redis connection from pool.');
         }
 
-        $id = $redis->rpop("{$this->getChannel()}:waiting");
+        $id = $redis->brpop(["{$this->getChannel()}:waiting"], 0)[1] ?? 0;
 
         if ($id) {
             // reserved: {id} => attempts
