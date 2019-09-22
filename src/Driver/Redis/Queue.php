@@ -13,7 +13,6 @@ namespace Littlesqx\AintQueue\Driver\Redis;
 use Littlesqx\AintQueue\AbstractQueue;
 use Littlesqx\AintQueue\Connection\Pool\RedisPool;
 use Littlesqx\AintQueue\Connection\PoolFactory;
-use Littlesqx\AintQueue\Connection\PoolInterface;
 use Littlesqx\AintQueue\Exception\InvalidArgumentException;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\JobInterface;
@@ -40,7 +39,7 @@ class Queue extends AbstractQueue
     /**
      * @var RedisPool
      */
-    protected $redisPool;
+    protected $connectionPool;
 
     /**
      * Queue constructor.
@@ -52,21 +51,50 @@ class Queue extends AbstractQueue
      */
     public function __construct(string $channel, array $options = [])
     {
-        parent::__construct($channel);
+        parent::__construct($channel, $options);
 
-        $this->redisPool = PoolFactory::make(RedisPool::class, $options);
+        $this->connectionPool = PoolFactory::make(RedisPool::class, $options);
     }
 
-    public function setRedisPool(PoolInterface $pool)
+    /**
+     * Reset redis connection pool.
+     *
+     * @return $this
+     * @throws InvalidArgumentException
+     */
+    public function resetConnectionPool()
     {
-        $this->redisPool = $pool;
+        $this->connectionPool = PoolFactory::make(RedisPool::class, $this->options);
 
         return $this;
     }
 
-    public function getRedisPool()
+    /**
+     * Get a connection.
+     *
+     * @return Client
+     * @throws RuntimeException
+     * @throws \Throwable
+     */
+    public function getConnection()
     {
-        return $this->redisPool;
+        $connection = $this->connectionPool->get();
+
+        if (!$connection instanceof Client) {
+            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
+        }
+
+        return $connection;
+    }
+
+    /**
+     * Release a connection.
+     *
+     * @param $connection
+     */
+    public function releaseConnection(Client $connection): void
+    {
+        $this->connectionPool->release($connection);
     }
 
     /**
@@ -76,7 +104,6 @@ class Queue extends AbstractQueue
      *
      * @return mixed
      *
-     * @throws InvalidArgumentException
      * @throws \Throwable
      */
     public function push($message): void
@@ -100,12 +127,7 @@ class Queue extends AbstractQueue
             'serializedMessage' => $serializedMessage,
         ]);
 
-        /** @var Client $redis */
-        $redis = $this->redisPool->get();
-
-        if (!$redis instanceof Client) {
-            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
-        }
+        $redis = $this->getConnection();
 
         $id = $redis->incr("{$this->getChannel()}:message_id");
         $redis->hset("{$this->getChannel()}:messages", $id, $pushMessage);
@@ -116,7 +138,7 @@ class Queue extends AbstractQueue
             $redis->lpush("{$this->getChannel()}:waiting", [$id]);
         }
 
-        $this->redisPool->release($redis);
+        $this->releaseConnection($redis);
     }
 
     /**
@@ -124,18 +146,11 @@ class Queue extends AbstractQueue
      *
      * @return mixed
      *
-     * @throws InvalidArgumentException
-     * @throws RuntimeException
      * @throws \Throwable
      */
     public function pop()
     {
-        /** @var Client $redis */
-        $redis = $this->redisPool->get();
-
-        if (!$redis instanceof Client) {
-            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
-        }
+        $redis = $this->getConnection();
 
         $id = $redis->brpop(["{$this->getChannel()}:waiting"], 0)[1] ?? 0;
 
@@ -150,7 +165,7 @@ class Queue extends AbstractQueue
             );
         }
 
-        $this->redisPool->release($redis);
+        $this->releaseConnection($redis);
 
         return $this->get($id);
     }
@@ -163,22 +178,16 @@ class Queue extends AbstractQueue
      * @return mixed
      *
      * @throws \Throwable
-     * @throws RuntimeException
      */
     public function remove($id)
     {
-        /** @var Client $redis */
-        $redis = $this->redisPool->get();
-
-        if (!$redis instanceof Client) {
-            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
-        }
+        $redis = $this->getConnection();
 
         $redis->hdel("{$this->getChannel()}:reserved", $id);
         $redis->hdel("{$this->getChannel()}:attempts", $id);
         $redis->hdel("{$this->getChannel()}:messages", $id);
 
-        $this->redisPool->release($redis);
+        $this->releaseConnection($redis);
     }
 
     /**
@@ -194,12 +203,8 @@ class Queue extends AbstractQueue
      */
     public function release($id, int $delay = 0)
     {
-        /** @var Client $redis */
-        $redis = $this->redisPool->get();
+        $redis = $this->getConnection();
 
-        if (!$redis instanceof Client) {
-            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
-        }
         $ret = $redis->eval(
             LuaScripts::release(),
             2,
@@ -209,7 +214,7 @@ class Queue extends AbstractQueue
             time() + $delay
         );
 
-        $this->redisPool->release($redis);
+        $this->releaseConnection($redis);
 
         return $ret;
     }
@@ -231,12 +236,7 @@ class Queue extends AbstractQueue
             throw new InvalidArgumentException("Invalid message ID: $id.");
         }
 
-        /** @var Client $redis */
-        $redis = $this->redisPool->get();
-
-        if (!$redis instanceof Client) {
-            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
-        }
+        $redis = $this->getConnection();
 
         $status = self::STATUS_DONE;
 
@@ -252,7 +252,7 @@ class Queue extends AbstractQueue
             $status = self::STATUS_WAITING;
         }
 
-        $this->redisPool->release($redis);
+        $this->releaseConnection($redis);
 
         return $status;
     }
@@ -267,17 +267,12 @@ class Queue extends AbstractQueue
      */
     public function clear()
     {
-        /** @var Client $redis */
-        $redis = $this->redisPool->get();
-
-        if (!$redis instanceof Client) {
-            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
-        }
+        $redis = $this->getConnection();
 
         $keys = $redis->keys("{$this->getChannel()}:*");
         $redis->del($keys);
 
-        $this->redisPool->release($redis);
+        $this->releaseConnection($redis);
     }
 
     /**
@@ -293,18 +288,13 @@ class Queue extends AbstractQueue
      */
     public function get($id)
     {
-        /** @var Client $redis */
-        $redis = $this->redisPool->get();
-
-        if (!$redis instanceof Client) {
-            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
-        }
+        $redis = $this->getConnection();
 
         $attempts = $redis->hget("{$this->getChannel()}:attempts", $id);
 
         $payload = $redis->hget("{$this->getChannel()}:messages", $id);
 
-        $this->redisPool->release($redis);
+        $this->releaseConnection($redis);
 
         if (null === $payload) {
             return [$id, 0, null];
@@ -337,12 +327,7 @@ class Queue extends AbstractQueue
      */
     public function size(): int
     {
-        /** @var Client $redis */
-        $redis = $this->redisPool->get();
-
-        if (!$redis instanceof Client) {
-            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
-        }
+        $redis = $this->getConnection();
 
         $size = $redis->eval(
             LuaScripts::size(),
@@ -352,7 +337,7 @@ class Queue extends AbstractQueue
             "{$this->getChannel()}:reserved"
         );
 
-        $this->redisPool->release($redis);
+        $this->releaseConnection($redis);
 
         return $size;
     }
@@ -407,12 +392,7 @@ class Queue extends AbstractQueue
      */
     public function migrateExpired(): void
     {
-        /** @var Client $redis */
-        $redis = $this->redisPool->get();
-
-        if (!$redis instanceof Client) {
-            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
-        }
+        $redis = $this->getConnection();
 
         $redis->eval(
             LuaScripts::migrateExpiredJobs(),
@@ -422,7 +402,7 @@ class Queue extends AbstractQueue
             time()
         );
 
-        $this->redisPool->release($redis);
+        $this->releaseConnection($redis);
     }
 
     /**
@@ -435,12 +415,7 @@ class Queue extends AbstractQueue
      */
     public function status(): array
     {
-        /** @var Client $redis */
-        $redis = $this->redisPool->get();
-
-        if (!$redis instanceof Client) {
-            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
-        }
+        $redis = $this->getConnection();
 
         $waiting = $redis->llen("{$this->getChannel()}:waiting");
         $delayed = $redis->zcount("{$this->getChannel()}:delayed", '-inf', '+inf');
@@ -448,7 +423,7 @@ class Queue extends AbstractQueue
         $failed = $redis->hlen("{$this->getChannel()}:failed");
         $total = $redis->get("{$this->getChannel()}:message_id") ?? 0;
 
-        $this->redisPool->release($redis);
+        $this->releaseConnection($redis);
 
         $done = $total - $waiting - $delayed - $reserved - $failed;
 
@@ -464,16 +439,11 @@ class Queue extends AbstractQueue
      */
     public function ready(string $worker, $messageId)
     {
-        /** @var Client $redis */
-        $redis = $this->redisPool->get();
-
-        if (!$redis instanceof Client) {
-            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
-        }
+        $redis = $this->getConnection();
 
         $redis->lpush("{$this->getChannel()}:ready:{$worker}", [$messageId]);
 
-        $this->redisPool->release($redis);
+        $this->releaseConnection($redis);
     }
 
     /**
@@ -486,16 +456,11 @@ class Queue extends AbstractQueue
      */
     public function getReady(string $worker)
     {
-        /** @var Client $redis */
-        $redis = $this->redisPool->get();
-
-        if (!$redis instanceof Client) {
-            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
-        }
+        $redis = $this->getConnection();
 
         $messageId = $redis->brpop(["{$this->getChannel()}:ready:{$worker}"], 0)[1] ?? 0;
 
-        $this->redisPool->release($redis);
+        $this->releaseConnection($redis);
 
         return $messageId;
     }
@@ -508,17 +473,12 @@ class Queue extends AbstractQueue
      */
     public function failed($id)
     {
-        /** @var Client $redis */
-        $redis = $this->redisPool->get();
-
-        if (!$redis instanceof Client) {
-            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
-        }
+        $redis = $this->getConnection();
 
         $redis->hdel("{$this->getChannel()}:reserved", $id);
         $redis->hset("{$this->getChannel()}:failed", $id, time());
 
-        $this->redisPool->release($redis);
+        $this->releaseConnection($redis);
     }
 
     /**
@@ -530,18 +490,13 @@ class Queue extends AbstractQueue
      */
     public function retryReserved()
     {
-        /** @var Client $redis */
-        $redis = $this->redisPool->get();
-
-        if (!$redis instanceof Client) {
-            throw new RuntimeException('[Error] can not pop a redis connection from pool.');
-        }
+        $redis = $this->getConnection();
 
         $ids = $redis->hgetall("{$this->getChannel()}:reserved");
         foreach ($ids as $id => $attempts) {
             $this->release($id);
         }
 
-        $this->redisPool->release($redis);
+        $this->releaseConnection($redis);
     }
 }

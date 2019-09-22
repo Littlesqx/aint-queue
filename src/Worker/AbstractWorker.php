@@ -59,8 +59,7 @@ abstract class AbstractWorker implements WorkerInterface
 
     public function resetConnectionPool()
     {
-        $options = $this->manager->getOptions()['driver'] ?? [];
-        $this->manager->getQueue()->setRedisPool(PoolFactory::make(RedisPool::class, $options));
+        $this->manager->getQueue()->resetConnectionPool();
     }
 
     /**
