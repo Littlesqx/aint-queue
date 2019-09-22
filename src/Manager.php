@@ -97,12 +97,12 @@ class Manager
     {
         // force exit
         SwooleProcess::signal(SIGTERM, function () {
-            $this->workerDirector->wait();
+            $this->workerDirector->stop();
             $this->exitMaster();
         });
         // force killed
         SwooleProcess::signal(SIGKILL, function () {
-            $this->workerDirector->wait();
+            $this->workerDirector->stop();
             $this->exitMaster();
         });
         // custom signal - exit smoothly
