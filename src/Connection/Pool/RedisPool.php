@@ -20,7 +20,7 @@ class RedisPool extends AbstractPool
      *
      * @return Client
      */
-    public function createConnection()
+    public function createConnection(): Client
     {
         return new Client($this->options['connection'] ?? []);
     }
@@ -33,5 +33,21 @@ class RedisPool extends AbstractPool
     public function closeConnection($connection): void
     {
         $connection->getConnection()->disconnect();
+    }
+
+    /**
+     * Check connect Whether is available.
+     *
+     * @param Client $connection
+     *
+     * @return bool
+     */
+    public function checkConnection($connection): bool
+    {
+        try {
+            return $connection->isConnected() && $connection->ping();
+        } catch (\Exception $e) {}
+
+        return false;
     }
 }

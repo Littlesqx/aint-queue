@@ -54,7 +54,13 @@ abstract class AbstractPool implements PoolInterface
             throw $t;
         }
 
-        return $this->channel->pop($this->options['wait_timeout'] ?? 3);
+        $connection = $this->channel->pop($this->options['wait_timeout'] ?? 3);
+
+        if (!$this->checkConnection($connection)) {
+            return $this->createConnection();
+        }
+
+        return $connection;
     }
 
     /**
@@ -90,4 +96,13 @@ abstract class AbstractPool implements PoolInterface
      * @param $connection
      */
     abstract public function closeConnection($connection): void;
+
+    /**
+     * Check connect Whether is available.
+     *
+     * @param $connection
+     *
+     * @return bool
+     */
+    abstract public function checkConnection($connection): bool;
 }
