@@ -62,6 +62,7 @@ interface QueueInterface
      * Pop a job message from ready-queue.
      *
      * @param string $worker
+     *
      * @return mixed
      */
     public function popReady(string $worker);

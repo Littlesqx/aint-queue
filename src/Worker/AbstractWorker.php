@@ -131,6 +131,7 @@ abstract class AbstractWorker implements WorkerInterface
      * Receive an task into current worker.
      *
      * @param int $messageId
+     *
      * @throws \Throwable
      */
     public function receive($messageId): void

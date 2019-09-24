@@ -70,6 +70,7 @@ class Queue extends AbstractQueue
      * Get a connection.
      *
      * @return Client
+     *
      * @throws RuntimeException
      * @throws \Throwable
      */
@@ -475,10 +476,9 @@ class Queue extends AbstractQueue
     }
 
     /**
-     * Retry reserved job (only called when listener restart.)
+     * Retry reserved job (only called when listener restart.).
      *
      * @throws RuntimeException
-     *
      * @throws \Throwable
      */
     public function retryReserved()

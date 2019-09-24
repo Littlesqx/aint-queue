@@ -46,7 +46,8 @@ class RedisPool extends AbstractPool
     {
         try {
             return $connection->isConnected() && $connection->ping();
-        } catch (\Exception $e) {}
+        } catch (\Exception $e) {
+        }
 
         return false;
     }

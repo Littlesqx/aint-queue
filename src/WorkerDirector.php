@@ -40,9 +40,9 @@ class WorkerDirector
     /**
      * WorkerDirector constructor.
      *
-     * @param array $workerOptions
+     * @param array           $workerOptions
      * @param LoggerInterface $logger
-     * @param QueueInterface $queue
+     * @param QueueInterface  $queue
      *
      * @throws Exception\RuntimeException
      */
@@ -71,6 +71,7 @@ class WorkerDirector
      *
      * @param $messageId
      * @param $message
+     *
      * @throws \Throwable
      */
     public function dispatch($messageId, $message): void

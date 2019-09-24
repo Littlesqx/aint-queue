@@ -46,6 +46,7 @@ class ProcessPoolWorker extends AbstractWorker
      *
      * @param SwooleProcessPool $pool
      * @param $workerId
+     *
      * @throws \Throwable
      */
     protected function workerStart(SwooleProcessPool $pool, $workerId)
