@@ -11,24 +11,22 @@
 namespace Littlesqx\AintQueue\Worker;
 
 use Littlesqx\AintQueue\Helper\SwooleHelper;
-use Littlesqx\AintQueue\Manager;
+use Littlesqx\AintQueue\QueueInterface;
+use Psr\Log\LoggerInterface;
 
 class ProcessWorker extends AbstractWorker
 {
-    protected $timer = 0;
-
-    public function __construct(Manager $manager)
+    public function __construct(array $options, LoggerInterface $logger, QueueInterface $queue)
     {
-        parent::__construct($manager, function () {
-            $this->resetConnectionPool();
-
+        parent::__construct($options, $logger, $queue, function () {
+            $this->queue->resetConnection();
             SwooleHelper::setProcessName($this->getName());
 
             while ($this->canContinue) {
-                $messageId = $this->manager->getQueue()->getReady($this->getName());
-                $this->manager->executeJobInProcess($messageId);
+                $messageId = $this->queue->popReady($this->getName());
+                $this->executeJobInProcess($messageId);
                 if (!$this->canContinue) {
-                    $this->manager->getLogger()->info($this->getName().' - pid='.getmypid().' pre-stop.');
+                    $this->logger->info($this->getName().' - pid='.getmypid().' pre-stop.');
                 }
             }
         });
@@ -41,6 +39,6 @@ class ProcessWorker extends AbstractWorker
      */
     public function getName(): string
     {
-        return 'aint-queue-process-worker'.":{$this->channel}";
+        return 'aint-queue-process-worker'.":{$this->queue->getChannel()}";
     }
 }

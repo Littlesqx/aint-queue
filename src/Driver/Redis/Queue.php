@@ -59,14 +59,11 @@ class Queue extends AbstractQueue
     /**
      * Reset redis connection pool.
      *
-     * @return $this
      * @throws InvalidArgumentException
      */
-    public function resetConnectionPool()
+    public function resetConnection(): void
     {
         $this->connectionPool = PoolFactory::make(RedisPool::class, $this->options);
-
-        return $this;
     }
 
     /**
@@ -129,20 +126,20 @@ class Queue extends AbstractQueue
 
         $redis = $this->getConnection();
 
-        $id = $redis->incr("{$this->getChannel()}:message_id");
-        $redis->hset("{$this->getChannel()}:messages", $id, $pushMessage);
+        $id = $redis->incr("{$this->channelPrefix}{$this->getChannel()}:message_id");
+        $redis->hset("{$this->channelPrefix}{$this->getChannel()}:messages", $id, $pushMessage);
 
         if ($this->pushDelay > 0) {
-            $redis->zadd("{$this->getChannel()}:delayed", [$id => time() + $this->pushDelay]);
+            $redis->zadd("{$this->channelPrefix}{$this->getChannel()}:delayed", [$id => time() + $this->pushDelay]);
         } else {
-            $redis->lpush("{$this->getChannel()}:waiting", [$id]);
+            $redis->lpush("{$this->channelPrefix}{$this->getChannel()}:waiting", [$id]);
         }
 
         $this->releaseConnection($redis);
     }
 
     /**
-     * Pop an job message from queue.
+     * Pop a job message from waiting-queue.
      *
      * @return mixed
      *
@@ -152,15 +149,15 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        $id = $redis->brpop(["{$this->getChannel()}:waiting"], 0)[1] ?? 0;
+        $id = $redis->brpop(["{$this->channelPrefix}{$this->getChannel()}:waiting"], 0)[1] ?? 0;
 
         if ($id) {
             // reserved: {id} => attempts
             $redis->eval(
                 LuaScripts::reserve(),
                 2,
-                "{$this->getChannel()}:reserved",
-                "{$this->getChannel()}:attempts",
+                "{$this->channelPrefix}{$this->getChannel()}:reserved",
+                "{$this->channelPrefix}{$this->getChannel()}:attempts",
                 $id
             );
         }
@@ -183,9 +180,9 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        $redis->hdel("{$this->getChannel()}:reserved", $id);
-        $redis->hdel("{$this->getChannel()}:attempts", $id);
-        $redis->hdel("{$this->getChannel()}:messages", $id);
+        $redis->hdel("{$this->channelPrefix}{$this->getChannel()}:reserved", $id);
+        $redis->hdel("{$this->channelPrefix}{$this->getChannel()}:attempts", $id);
+        $redis->hdel("{$this->channelPrefix}{$this->getChannel()}:messages", $id);
 
         $this->releaseConnection($redis);
     }
@@ -208,8 +205,8 @@ class Queue extends AbstractQueue
         $ret = $redis->eval(
             LuaScripts::release(),
             2,
-            "{$this->getChannel()}:delayed",
-            "{$this->getChannel()}:reserved",
+            "{$this->channelPrefix}{$this->getChannel()}:delayed",
+            "{$this->channelPrefix}{$this->getChannel()}:reserved",
             $id,
             time() + $delay
         );
@@ -240,15 +237,15 @@ class Queue extends AbstractQueue
 
         $status = self::STATUS_DONE;
 
-        if ($redis->hexists("{$this->getChannel()}:reserved", $id)) {
+        if ($redis->hexists("{$this->channelPrefix}{$this->getChannel()}:reserved", $id)) {
             $status = self::STATUS_RESERVED;
         }
 
-        if ($redis->hexists("{$this->getChannel()}:failed", $id)) {
+        if ($redis->hexists("{$this->channelPrefix}{$this->getChannel()}:failed", $id)) {
             $status = self::STATUS_FAILED;
         }
 
-        if ($redis->hexists("{$this->getChannel()}:messages", $id)) {
+        if ($redis->hexists("{$this->channelPrefix}{$this->getChannel()}:messages", $id)) {
             $status = self::STATUS_WAITING;
         }
 
@@ -269,8 +266,10 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        $keys = $redis->keys("{$this->getChannel()}:*");
-        $redis->del($keys);
+        $keys = $redis->keys("{$this->channelPrefix}{$this->getChannel()}:*");
+        if (!empty($keys)) {
+            $redis->del($keys);
+        }
 
         $this->releaseConnection($redis);
     }
@@ -290,9 +289,9 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        $attempts = $redis->hget("{$this->getChannel()}:attempts", $id);
+        $attempts = $redis->hget("{$this->channelPrefix}{$this->getChannel()}:attempts", $id);
 
-        $payload = $redis->hget("{$this->getChannel()}:messages", $id);
+        $payload = $redis->hget("{$this->channelPrefix}{$this->getChannel()}:messages", $id);
 
         $this->releaseConnection($redis);
 
@@ -305,16 +304,6 @@ class Queue extends AbstractQueue
         $serializer = Factory::getInstance($message['serializerType']);
 
         return [$id, $attempts, $serializer->unSerialize($message['serializedMessage'])];
-    }
-
-    /**
-     * Get channel name of current queue.
-     *
-     * @return string
-     */
-    public function getChannel(): string
-    {
-        return $this->channel;
     }
 
     /**
@@ -332,9 +321,9 @@ class Queue extends AbstractQueue
         $size = $redis->eval(
             LuaScripts::size(),
             3,
-            "{$this->getChannel()}:waiting",
-            "{$this->getChannel()}:delayed",
-            "{$this->getChannel()}:reserved"
+            "{$this->channelPrefix}{$this->getChannel()}:waiting",
+            "{$this->channelPrefix}{$this->getChannel()}:delayed",
+            "{$this->channelPrefix}{$this->getChannel()}:reserved"
         );
 
         $this->releaseConnection($redis);
@@ -397,8 +386,8 @@ class Queue extends AbstractQueue
         $redis->eval(
             LuaScripts::migrateExpiredJobs(),
             2,
-            "{$this->getChannel()}:delayed",
-            "{$this->getChannel()}:waiting",
+            "{$this->channelPrefix}{$this->getChannel()}:delayed",
+            "{$this->channelPrefix}{$this->getChannel()}:waiting",
             time()
         );
 
@@ -417,11 +406,11 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        $waiting = $redis->llen("{$this->getChannel()}:waiting");
-        $delayed = $redis->zcount("{$this->getChannel()}:delayed", '-inf', '+inf');
-        $reserved = $redis->hlen("{$this->getChannel()}:reserved");
-        $failed = $redis->hlen("{$this->getChannel()}:failed");
-        $total = $redis->get("{$this->getChannel()}:message_id") ?? 0;
+        $waiting = $redis->llen("{$this->channelPrefix}{$this->getChannel()}:waiting");
+        $delayed = $redis->zcount("{$this->channelPrefix}{$this->getChannel()}:delayed", '-inf', '+inf');
+        $reserved = $redis->hlen("{$this->channelPrefix}{$this->getChannel()}:reserved");
+        $failed = $redis->hlen("{$this->channelPrefix}{$this->getChannel()}:failed");
+        $total = $redis->get("{$this->channelPrefix}{$this->getChannel()}:message_id") ?? 0;
 
         $this->releaseConnection($redis);
 
@@ -431,17 +420,19 @@ class Queue extends AbstractQueue
     }
 
     /**
+     * Ready a job onto worker queue.
+     *
+     * @param $id
      * @param string $worker
-     * @param $messageId
      *
      * @throws RuntimeException
      * @throws \Throwable
      */
-    public function ready(string $worker, $messageId)
+    public function ready($id, string $worker)
     {
         $redis = $this->getConnection();
 
-        $redis->lpush("{$this->getChannel()}:ready:{$worker}", [$messageId]);
+        $redis->lpush("{$this->channelPrefix}{$this->getChannel()}:ready:{$worker}", [$id]);
 
         $this->releaseConnection($redis);
     }
@@ -454,11 +445,11 @@ class Queue extends AbstractQueue
      * @throws RuntimeException
      * @throws \Throwable
      */
-    public function getReady(string $worker)
+    public function popReady(string $worker)
     {
         $redis = $this->getConnection();
 
-        $messageId = $redis->brpop(["{$this->getChannel()}:ready:{$worker}"], 0)[1] ?? 0;
+        $messageId = $redis->brpop(["{$this->channelPrefix}{$this->getChannel()}:ready:{$worker}"], 0)[1] ?? 0;
 
         $this->releaseConnection($redis);
 
@@ -466,6 +457,8 @@ class Queue extends AbstractQueue
     }
 
     /**
+     * Fail a job.
+     *
      * @param $id
      *
      * @throws RuntimeException
@@ -475,8 +468,8 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        $redis->hdel("{$this->getChannel()}:reserved", $id);
-        $redis->hset("{$this->getChannel()}:failed", $id, time());
+        $redis->hdel("{$this->channelPrefix}{$this->getChannel()}:reserved", $id);
+        $redis->hset("{$this->channelPrefix}{$this->getChannel()}:failed", $id, time());
 
         $this->releaseConnection($redis);
     }
@@ -492,7 +485,7 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        $ids = $redis->hgetall("{$this->getChannel()}:reserved");
+        $ids = $redis->hgetall("{$this->channelPrefix}{$this->getChannel()}:reserved");
         foreach ($ids as $id => $attempts) {
             $this->release($id);
         }

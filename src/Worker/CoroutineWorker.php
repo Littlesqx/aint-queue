@@ -11,24 +11,25 @@
 namespace Littlesqx\AintQueue\Worker;
 
 use Littlesqx\AintQueue\Helper\SwooleHelper;
-use Littlesqx\AintQueue\Manager;
+use Littlesqx\AintQueue\QueueInterface;
+use Psr\Log\LoggerInterface;
 use Swoole\Coroutine;
 use Swoole\Runtime;
 
 class CoroutineWorker extends AbstractWorker
 {
-    public function __construct(Manager $manager)
+    public function __construct(array $options, LoggerInterface $logger, QueueInterface $queue)
     {
-        parent::__construct($manager, function () {
-            $this->resetConnectionPool();
+        parent::__construct($options, $logger, $queue, function () {
+            $this->queue->resetConnection();
             // required
             Runtime::enableCoroutine();
 
             SwooleHelper::setProcessName($this->getName());
 
             while ($this->canContinue) {
-                $messageId = $this->manager->getQueue()->getReady($this->getName());
-                Coroutine::create([$this->manager, 'executeJob'], $messageId);
+                $messageId = $this->queue->popReady($this->getName());
+                Coroutine::create([$this, 'executeJob'], $messageId);
             }
         }, true);
     }
@@ -40,6 +41,6 @@ class CoroutineWorker extends AbstractWorker
      */
     public function getName(): string
     {
-        return 'aint-queue-coroutine-worker'.":{$this->channel}";
+        return 'aint-queue-coroutine-worker'.":{$this->queue->getChannel()}";
     }
 }

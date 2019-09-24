@@ -13,9 +13,15 @@ namespace Littlesqx\AintQueue;
 use Littlesqx\AintQueue\Worker\CoroutineWorker;
 use Littlesqx\AintQueue\Worker\ProcessPoolWorker;
 use Littlesqx\AintQueue\Worker\ProcessWorker;
+use Psr\Log\LoggerInterface;
 
 class WorkerDirector
 {
+    /**
+     * @var array
+     */
+    protected $options;
+
     /**
      * @var ProcessWorker
      */
@@ -31,22 +37,31 @@ class WorkerDirector
      */
     protected $coroutineWorker;
 
-    public function __construct(Manager $manager)
+    /**
+     * WorkerDirector constructor.
+     *
+     * @param array $workerOptions
+     * @param LoggerInterface $logger
+     * @param QueueInterface $queue
+     *
+     * @throws Exception\RuntimeException
+     */
+    public function __construct(array $workerOptions, LoggerInterface $logger, QueueInterface $queue)
     {
-        $options = $manager->getOptions();
+        $this->options = $workerOptions;
 
-        if ($options['worker']['process_worker']['enable'] ?? false) {
-            $this->processWorker = new ProcessWorker($manager);
+        if ($workerOptions['process_worker']['enable'] ?? false) {
+            $this->processWorker = new ProcessWorker($workerOptions['process_worker'] ?? [], $logger, $queue);
             $this->processWorker->start();
         }
 
-        if ($options['worker']['process_pool_worker']['enable'] ?? false) {
-            $this->processPoolWorker = new ProcessPoolWorker($manager);
+        if ($workerOptions['process_pool_worker']['enable'] ?? false) {
+            $this->processPoolWorker = new ProcessPoolWorker($workerOptions['process_pool_worker'] ?? [], $logger, $queue);
             $this->processPoolWorker->start();
         }
 
-        if ($options['worker']['coroutine_worker']['enable'] ?? false) {
-            $this->coroutineWorker = new CoroutineWorker($manager);
+        if ($workerOptions['coroutine_worker']['enable'] ?? false) {
+            $this->coroutineWorker = new CoroutineWorker($workerOptions['coroutine_worker'] ?? [], $logger, $queue);
             $this->coroutineWorker->start();
         }
     }
@@ -55,7 +70,8 @@ class WorkerDirector
      * Dispatch job to executor.
      *
      * @param $messageId
-     * @param $message*
+     * @param $message
+     * @throws \Throwable
      */
     public function dispatch($messageId, $message): void
     {

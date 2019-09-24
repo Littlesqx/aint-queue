@@ -12,7 +12,8 @@ namespace Littlesqx\AintQueue\Worker;
 
 use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Littlesqx\AintQueue\Helper\SwooleHelper;
-use Littlesqx\AintQueue\Manager;
+use Littlesqx\AintQueue\QueueInterface;
+use Psr\Log\LoggerInterface;
 use Swoole\Process\Pool as SwooleProcessPool;
 
 class ProcessPoolWorker extends AbstractWorker
@@ -22,12 +23,12 @@ class ProcessPoolWorker extends AbstractWorker
      */
     protected $processPool;
 
-    public function __construct(Manager $manager)
+    public function __construct(array $options, LoggerInterface $logger, QueueInterface $queue)
     {
-        parent::__construct($manager, function () {
+        parent::__construct($options, $logger, $queue, function () {
             SwooleHelper::setProcessName($this->getName());
 
-            $workerNum = $this->manager->getOptions()['worker']['process_pool_worker']['worker_number'] ?? 4;
+            $workerNum = $this->options['worker_number'] ?? 4;
             $this->processPool = new SwooleProcessPool($workerNum);
             $this->processPool->on('WorkerStart', function ($pool, $workerId) {
                 $this->workerStart($pool, $workerId);
@@ -45,21 +46,22 @@ class ProcessPoolWorker extends AbstractWorker
      *
      * @param SwooleProcessPool $pool
      * @param $workerId
+     * @throws \Throwable
      */
     protected function workerStart(SwooleProcessPool $pool, $workerId)
     {
-        $this->resetConnectionPool();
+        $this->queue->resetConnection();
 
-        $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' start.');
+        $this->logger->info($this->getName().' sub-worker:'.$workerId.' start.');
 
         SwooleHelper::setProcessName($this->getName().' sub-worker:'.$workerId);
 
         while ($this->canContinue) {
-            $messageId = $this->manager->getQueue()->getReady($this->getName());
-            $this->manager->executeJob($messageId);
-            $limit = $this->manager->getOptions()['worker']['process_pool_worker']['worker_number'] ?? 512;
+            $messageId = $this->queue->popReady($this->getName());
+            $this->executeJob($messageId);
+            $limit = $this->options['memory_limit'] ?? 512;
             if (!$this->canContinue && $limit > EnvironmentHelper::getCurrentMemoryUsage()) {
-                $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' stop.');
+                $this->logger->info($this->getName().' sub-worker:'.$workerId.' stop.');
             }
         }
     }
@@ -72,7 +74,7 @@ class ProcessPoolWorker extends AbstractWorker
      */
     protected function workerStop(SwooleProcessPool $pool, $workerId)
     {
-        $this->manager->getLogger()->info($this->getName().' sub-worker:'.$workerId.' stop.');
+        $this->logger->info($this->getName().' sub-worker:'.$workerId.' stop.');
     }
 
     /**
@@ -82,6 +84,6 @@ class ProcessPoolWorker extends AbstractWorker
      */
     public function getName(): string
     {
-        return 'aint-queue-process-pool-worker'.":{$this->channel}";
+        return 'aint-queue-process-pool-worker'.":{$this->queue->getChannel()}";
     }
 }

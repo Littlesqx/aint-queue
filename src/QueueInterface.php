@@ -11,6 +11,7 @@
 namespace Littlesqx\AintQueue;
 
 use Littlesqx\AintQueue\Exception\InvalidArgumentException;
+use Littlesqx\AintQueue\Exception\RuntimeException;
 
 interface QueueInterface
 {
@@ -51,11 +52,19 @@ interface QueueInterface
     public function push($message);
 
     /**
-     * Pop an job message from queue.
+     * Pop a job message from waiting-queue.
      *
      * @return mixed
      */
     public function pop();
+
+    /**
+     * Pop a job message from ready-queue.
+     *
+     * @param string $worker
+     * @return mixed
+     */
+    public function popReady(string $worker);
 
     /**
      * Remove specific job from current queue.
@@ -67,12 +76,33 @@ interface QueueInterface
     public function remove($id);
 
     /**
+     * Ready a job onto worker queue.
+     *
+     * @param $id
+     * @param string $worker
+     *
+     * @throws RuntimeException
+     * @throws \Throwable
+     */
+    public function ready($id, string $worker);
+
+    /**
      * Release a job which was failed to execute.
      *
      * @param $id
      * @param int $delay
      */
     public function release($id, int $delay = 0);
+
+    /**
+     * Fail a job.
+     *
+     * @param $id
+     *
+     * @throws RuntimeException
+     * @throws \Throwable
+     */
+    public function failed($id);
 
     /**
      * Get current queue's size.
@@ -94,4 +124,18 @@ interface QueueInterface
      * @return array
      */
     public function status(): array;
+
+    /**
+     * Reset connection.
+     */
+    public function resetConnection(): void;
+
+    /**
+     * Delay to execute the job.
+     *
+     * @param int $delay
+     *
+     * @return $this
+     */
+    public function delay(int $delay);
 }

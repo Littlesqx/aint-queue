@@ -60,7 +60,7 @@ abstract class AbstractQueue implements QueueInterface
      */
     public function getChannel(): string
     {
-        return $this->channelPrefix.':'.$this->channel;
+        return $this->channel;
     }
 
     /**
@@ -81,8 +81,4 @@ abstract class AbstractQueue implements QueueInterface
 
         return $this;
     }
-
-    abstract public function getReady(string $worker);
-
-    abstract public function failed($id);
 }

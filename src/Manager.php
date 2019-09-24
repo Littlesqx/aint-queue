@@ -20,7 +20,6 @@ use Swoole\Coroutine;
 use Swoole\Process as SwooleProcess;
 use Swoole\Runtime;
 use Swoole\Timer;
-use Symfony\Component\Process\Process;
 
 class Manager
 {
@@ -73,9 +72,12 @@ class Manager
         @file_put_contents($pidFile, getmypid());
     }
 
+    /**
+     * @throws RuntimeException
+     */
     protected function setupWorker(): void
     {
-        $this->workerDirector = new WorkerDirector($this);
+        $this->workerDirector = new WorkerDirector($this->getOptions()['worker'], $this->getLogger(), $this->getQueue());
     }
 
     /**
@@ -182,6 +184,7 @@ class Manager
 
         // required
         Runtime::enableCoroutine();
+
         Coroutine::create(function () {
             $this->registerTimer();
             $this->setupPidFile();
@@ -191,7 +194,11 @@ class Manager
 
                     if (null === $job) {
                         if ($id) {
-                            $this->getLogger()->error('Invalid job, id = '.$id);
+                            $this->getLogger()->error('Invalid job, id = '.$id, [
+                                'driver' => get_class($this->queue),
+                                'channel' => $this->queue->getChannel(),
+                                'message_id' => $id,
+                            ]);
                             $this->getQueue()->failed($id);
                         } else {
                             Coroutine::sleep($this->getSleepTime());
@@ -200,7 +207,12 @@ class Manager
                     }
                     $this->workerDirector->dispatch($id, $job);
                 } catch (\Throwable $t) {
-                    $this->getLogger()->error('Job execute error, '.$t->getMessage());
+                    $this->getLogger()->error('Job dispatch error, '.$t->getMessage(), [
+                        'driver' => get_class($this->queue),
+                        'channel' => $this->queue->getChannel(),
+                        'message_id' => $id ?? null,
+                    ]);
+                    !empty($id) && $this->getQueue()->failed($id);
                 }
 
                 if ($this->memoryExceeded()) {
@@ -275,58 +287,6 @@ class Manager
                 'message_id' => $id,
             ]);
         }
-    }
-
-    /**
-     * Execute job in a new process. (blocking).
-     *
-     * @param $messageId
-     *
-     * @throws RuntimeException
-     */
-    public function executeJobInProcess($messageId): void
-    {
-        $timeout = $this->options['worker']['process_worker']['max_execute_seconds'] ?? 60;
-        try {
-            [$id, , $job] = $this->queue->get($messageId);
-            $job instanceof SyncJobInterface && $timeout = $job->getTtr();
-        } catch (\Throwable $t) {
-            $this->getLogger()->error(get_class($t).': '.$t->getMessage(), [
-                'driver' => get_class($this->queue),
-                'channel' => $this->queue->getChannel(),
-                'message_id' => $id ?? 'null',
-            ]);
-
-            return;
-        }
-
-        $entry = EnvironmentHelper::getAppBinary();
-        if (null === $entry) {
-            throw new RuntimeException('Fail to get app entry file.');
-        }
-
-        $cmd = [
-            EnvironmentHelper::getPhpBinary(),
-            $entry,
-            'queue:run',
-            "--id={$messageId}",
-            "--channel={$this->queue->getChannel()}",
-        ];
-
-        $process = new Process($cmd);
-
-        // set timeout
-        if ($timeout > 0) {
-            $process->setTimeout($timeout);
-        }
-
-        $process->run(function ($type, $buffer) {
-            if (Process::ERR === $type) {
-                fwrite(\STDERR, $buffer);
-            } else {
-                fwrite(\STDOUT, $buffer);
-            }
-        });
     }
 
     /**
