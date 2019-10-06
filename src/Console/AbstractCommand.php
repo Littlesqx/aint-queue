@@ -41,16 +41,16 @@ abstract class AbstractCommand extends Command
 
         $channel = $input->getOption('channel');
 
-        $binPath = dirname($_SERVER['SCRIPT_FILENAME']);
+        $binPath = \dirname($_SERVER['SCRIPT_FILENAME']);
 
-        if (file_exists($binPath.'/../../config/aint-queue.php')) {
+        if (\file_exists($binPath.'/../../config/aint-queue.php')) {
             $config = require $binPath.'/../../config/aint-queue.php';
         } else {
             $config = require __DIR__.'/../Config/config.php';
         }
 
         if (!isset($config[$channel])) {
-            throw new InvalidArgumentException(sprintf('[Error] The config of queue "%s" is not provided.', $channel));
+            throw new InvalidArgumentException(\sprintf('[Error] The config of queue "%s" is not provided.', $channel));
         }
 
         $options = $config[$channel];

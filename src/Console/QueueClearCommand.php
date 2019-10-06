@@ -34,6 +34,7 @@ class QueueClearCommand extends AbstractCommand
 
         if ($io->confirm("Are you sure to clear the $channel-queue?", false)) {
             $this->manager->getQueue()->clear();
+            $io->writeln('Success to clear!');
         }
     }
 }

@@ -33,7 +33,7 @@ class ClosureSerializer implements SerializerInterface
      */
     public function serialize($closure): string
     {
-        if (!is_callable($closure)) {
+        if (!\is_callable($closure)) {
             throw new InvalidArgumentException('Argument invalid, it must be callable.');
         }
 

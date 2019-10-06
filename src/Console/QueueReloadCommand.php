@@ -16,14 +16,14 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-class QueueStopCommand extends AbstractCommand
+class QueueReloadCommand extends AbstractCommand
 {
-    protected static $defaultName = 'queue:stop';
+    protected static $defaultName = 'queue:reload';
 
     protected function configure()
     {
-        $this->setDescription('Stop listening the queue.')
-            ->setHelp('This Command allows you to stop listening the queue.')
+        $this->setDescription('Reload worker for the queue.')
+            ->setHelp('This Command allows you to reload worker for the queue.')
             ->addOption('channel', 't', InputOption::VALUE_REQUIRED, 'The channel of queue.', 'default');
     }
 
@@ -38,10 +38,10 @@ class QueueStopCommand extends AbstractCommand
 
         $io = new SymfonyStyle($input, $output);
 
-        if ($io->confirm("Are you sure to stop listening the $channel-queue?", false)) {
+        if ($io->confirm("Are you sure to reload the worker for $channel-queue?", false)) {
             $pid = (int) \file_get_contents($this->manager->getPidFile());
-            Process::kill($pid, SIGTERM);
-            $io->writeln('Success to stop!');
+            Process::kill($pid, SIGUSR1);
+            $io->writeln('Success to reload!');
         }
     }
 }

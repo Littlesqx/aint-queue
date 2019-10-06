@@ -13,7 +13,14 @@ namespace Littlesqx\AintQueue\Worker;
 interface WorkerInterface
 {
     /**
-     * Run an task on current worker.
+     * Whether current worker is running.
+     *
+     * @return bool
+     */
+    public function isRunning(): bool;
+
+    /**
+     * Receive a task onto current worker.
      *
      * @param int $messageId
      */
@@ -22,9 +29,9 @@ interface WorkerInterface
     /**
      * Start current worker.
      *
-     * @return bool
+     * @return int
      */
-    public function start(): bool;
+    public function start(): int;
 
     /**
      * Stop current worker.
@@ -32,9 +39,12 @@ interface WorkerInterface
     public function stop(): void;
 
     /**
-     * Get worker name.
-     *
-     * @return string
+     * Wait current worker.
      */
-    public function getName(): string;
+    public function wait(): void;
+
+    /**
+     * Run tasks in loop.
+     */
+    public function work(): void;
 }

@@ -13,56 +13,134 @@ namespace Littlesqx\AintQueue;
 use Littlesqx\AintQueue\Worker\CoroutineWorker;
 use Littlesqx\AintQueue\Worker\ProcessPoolWorker;
 use Littlesqx\AintQueue\Worker\ProcessWorker;
+use Littlesqx\AintQueue\Worker\WorkerInterface;
 use Psr\Log\LoggerInterface;
+use Swoole\Process;
 
 class WorkerDirector
 {
+    /**
+     * @var LoggerInterface
+     */
+    protected $logger;
+
     /**
      * @var array
      */
     protected $options;
 
     /**
-     * @var ProcessWorker
+     * @var WorkerInterface[]
      */
-    protected $processWorker;
+    protected $workers = [];
 
     /**
-     * @var ProcessPoolWorker
+     * @var int[]
      */
-    protected $processPoolWorker;
+    protected $workerPid = [];
 
     /**
-     * @var CoroutineWorker
+     * @var bool
      */
-    protected $coroutineWorker;
+    protected $workerReloadAble = true;
+
+    /**
+     * @const string
+     */
+    const WORKER_PROCESS = 'process-worker';
+
+    /**
+     * @const string
+     */
+    const WORKER_PROCESS_POOL = 'process-pool-worker';
+
+    /**
+     * @const string
+     */
+    const WORKER_CO = 'co-worker';
 
     /**
      * WorkerDirector constructor.
      *
-     * @param array           $workerOptions
      * @param LoggerInterface $logger
      * @param QueueInterface  $queue
+     * @param array           $options
+     */
+    public function __construct(QueueInterface $queue, LoggerInterface $logger, array $options = [])
+    {
+        $this->logger = $logger;
+        $this->options = $options;
+
+        $this->registerSignal();
+
+        $this->workers[self::WORKER_PROCESS] = new ProcessWorker($queue, $logger, $options['process_worker'] ?? []);
+        $this->workers[self::WORKER_PROCESS_POOL] = new ProcessPoolWorker($queue, $logger, $options['process_pool_worker'] ?? []);
+        $this->workers[self::WORKER_CO] = new CoroutineWorker($queue, $logger, $options['coroutine_worker'] ?? []);
+    }
+
+    /**
+     * @return ProcessWorker
+     */
+    public function getProcessWorker(): ProcessWorker
+    {
+        return $this->workers[self::WORKER_PROCESS];
+    }
+
+    /**
+     * @return ProcessPoolWorker
+     */
+    public function getProcessPoolWorker(): ProcessPoolWorker
+    {
+        return $this->workers[self::WORKER_PROCESS_POOL];
+    }
+
+    /**
+     * @return CoroutineWorker
+     */
+    public function getCoroutineWorker(): CoroutineWorker
+    {
+        return $this->workers[self::WORKER_CO];
+    }
+
+    /**
+     * Register signal, reload worker when exit.
+     */
+    protected function registerSignal(): void
+    {
+        Process::signal(SIGCHLD, function () {
+            while ($ret = Process::wait(false)) {
+                $workerId = (int) $ret['pid'];
+                if ($workerId <= 0 || false === ($workerName = \array_search($workerId, $this->workerPid, true))) {
+                    $this->logger->error(\sprintf('Invalid ret when SIGCHLD recv, worker not match: %s', \json_encode($ret)));
+                    break;
+                }
+                $this->logger->info(\sprintf('Worker: %s - ret = %s, exit.', $workerName, \json_encode($ret)));
+
+                if ($this->workerReloadAble) {
+                    // restart worker...
+                    $this->workerPid[$workerName] = $this->workers[$workerName]->start();
+                }
+            }
+        });
+    }
+
+    /**
+     * Start worker.
      *
      * @throws Exception\RuntimeException
      */
-    public function __construct(array $workerOptions, LoggerInterface $logger, QueueInterface $queue)
+    public function start(): void
     {
-        $this->options = $workerOptions;
-
-        if ($workerOptions['process_worker']['enable'] ?? false) {
-            $this->processWorker = new ProcessWorker($workerOptions['process_worker'] ?? [], $logger, $queue);
-            $this->processWorker->start();
+        if ($this->options['process_worker']['enable'] ?? false) {
+            $this->workerPid[self::WORKER_PROCESS] = $this->getProcessWorker()->start();
         }
 
-        if ($workerOptions['process_pool_worker']['enable'] ?? false) {
-            $this->processPoolWorker = new ProcessPoolWorker($workerOptions['process_pool_worker'] ?? [], $logger, $queue);
-            $this->processPoolWorker->start();
+        if ($this->options['process_pool_worker']['enable'] ?? false) {
+            $this->workerPid[self::WORKER_PROCESS_POOL] = $this->getProcessPoolWorker()->start();
         }
 
-        if ($workerOptions['coroutine_worker']['enable'] ?? false) {
-            $this->coroutineWorker = new CoroutineWorker($workerOptions['coroutine_worker'] ?? [], $logger, $queue);
-            $this->coroutineWorker->start();
+        if ($this->options['coroutine_worker']['enable'] ?? false) {
+            $this->workerPid[self::WORKER_CO] = $this->getCoroutineWorker()->start();
         }
     }
 
@@ -77,43 +155,33 @@ class WorkerDirector
     public function dispatch($messageId, $message): void
     {
         if ($message instanceof CoJobInterface) {
-            $this->coroutineWorker->receive($messageId);
+            $this->getCoroutineWorker()->receive($messageId);
         } elseif ($message instanceof AsyncJobInterface) {
-            $this->processPoolWorker->receive($messageId);
+            $this->getProcessPoolWorker()->receive($messageId);
         } else {
-            $this->processWorker->receive($messageId);
+            $this->getProcessWorker()->receive($messageId);
         }
     }
 
     /**
-     * Wait running worker exit.
-     *
-     * @throws Exception\RuntimeException
+     * Reload all workers.
      */
-    public function wait()
+    public function reload(): void
     {
-        if ($this->processWorker && $this->processWorker->isRunning()) {
-            $this->processWorker->wait();
-        }
-
-        if ($this->processPoolWorker && $this->processPoolWorker->isRunning()) {
-            $this->processPoolWorker->wait();
+        $this->workerReloadAble = true;
+        foreach ($this->workers as $worker) {
+            $worker->isRunning() && $worker->wait();
         }
     }
 
     /**
-     * Stop running worker.
-     *
-     * @throws Exception\RuntimeException
+     * Stop all workers.
      */
-    public function stop()
+    public function stop(): void
     {
-        if ($this->processWorker->isRunning()) {
-            $this->processWorker->stop();
-        }
-
-        if ($this->processPoolWorker && $this->processPoolWorker->isRunning()) {
-            $this->processPoolWorker->stop();
+        $this->workerReloadAble = false;
+        foreach ($this->workers as $worker) {
+            $worker->isRunning() && $worker->stop();
         }
     }
 }

@@ -14,6 +14,6 @@ class SwooleHelper
 {
     public static function setProcessName(string $name): void
     {
-        PHP_OS == 'Linux' && swoole_set_process_name($name);
+        PHP_OS == 'Linux' && \swoole_set_process_name($name);
     }
 }

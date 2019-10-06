@@ -10,35 +10,61 @@
 
 namespace Littlesqx\AintQueue\Worker;
 
-use Littlesqx\AintQueue\Helper\SwooleHelper;
-use Littlesqx\AintQueue\QueueInterface;
-use Psr\Log\LoggerInterface;
+use Littlesqx\AintQueue\Helper\EnvironmentHelper;
+use Littlesqx\AintQueue\WorkerDirector;
+use Swoole\Coroutine;
 
 class ProcessWorker extends AbstractWorker
 {
-    public function __construct(array $options, LoggerInterface $logger, QueueInterface $queue)
-    {
-        parent::__construct($options, $logger, $queue, function () {
-            $this->queue->resetConnection();
-            SwooleHelper::setProcessName($this->getName());
+    /**
+     * @var string
+     */
+    protected $name = WorkerDirector::WORKER_PROCESS;
 
-            while ($this->canContinue) {
-                $messageId = $this->queue->popReady($this->getName());
-                $this->executeJobInProcess($messageId);
-                if (!$this->canContinue) {
-                    $this->logger->info($this->getName().' - pid='.getmypid().' pre-stop.');
+    /**
+     * Run tasks in loop.
+     */
+    public function work(): void
+    {
+        $this->initWorker();
+
+        Coroutine::create(function () {
+            Coroutine::defer(function () {
+                $this->exitWorker();
+            });
+            while ($this->working) {
+                $messageId = $this->queue->popReady($this->name);
+                if (!$messageId) {
+                    Coroutine::sleep(1);
+                    continue;
+                }
+                // If current worker is stopped,
+                // the job popped will be push onto ready queue again.
+                if (!$this->working) {
+                    $this->queue->ready($messageId, $this->name, true);
+                    break;
+                }
+                try {
+                    // Run in Symfony\Component\Process
+                    $this->executeJobInProcess($messageId);
+                } catch (\Throwable $t) {
+                    $e = \get_class($t);
+                    $this->logger->error("Job exec error,  {$e}: {$t->getMessage()}", [
+                        'driver' => \get_class($this->queue),
+                        'channel' => $this->queue->getChannel(),
+                        'message_id' => $messageId,
+                    ]);
+                    if ($this->queue->isReserved($messageId)) {
+                        $this->queue->release($messageId, 60);
+                    }
+                }
+
+                $limit = $this->options['memory_limit'] ?? 96;
+                if ($limit <= EnvironmentHelper::getCurrentMemoryUsage()) {
+                    $this->logger->info("Memory exceeded, worker:{$this->name} will reload later.");
+                    $this->working = false;
                 }
             }
         });
-    }
-
-    /**
-     * Get worker name.
-     *
-     * @return string
-     */
-    public function getName(): string
-    {
-        return 'aint-queue-process-worker'.":{$this->queue->getChannel()}";
     }
 }

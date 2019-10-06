@@ -10,17 +10,23 @@
 
 namespace Littlesqx\AintQueue\Worker;
 
+use Littlesqx\AintQueue\Exception\CoroutineNumberExceedException;
+use Littlesqx\AintQueue\Exception\InvalidJobException;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Helper\EnvironmentHelper;
+use Littlesqx\AintQueue\Helper\SwooleHelper;
 use Littlesqx\AintQueue\JobInterface;
 use Littlesqx\AintQueue\QueueInterface;
 use Littlesqx\AintQueue\SyncJobInterface;
 use Psr\Log\LoggerInterface;
 use Swoole\Process as SwooleProcess;
+use Swoole\Runtime;
 use Symfony\Component\Process\Process;
 
 abstract class AbstractWorker implements WorkerInterface
 {
+    protected $name;
+
     /**
      * @var array
      */
@@ -49,41 +55,98 @@ abstract class AbstractWorker implements WorkerInterface
     /**
      * @var bool
      */
-    protected $canContinue = true;
+    protected $redirectStdinStdout = false;
 
-    public function __construct(array $options, LoggerInterface $logger, QueueInterface $queue, \Closure $closure, bool $enableCoroutine = false)
+    /**
+     * @var int
+     */
+    protected $pipeType = 2;
+
+    /**
+     * @var bool
+     */
+    protected $enableCoroutine = true;
+
+    /**
+     * @var bool
+     */
+    protected $working = true;
+
+    /**
+     * @var bool
+     */
+    protected $workerReloadAble = false;
+
+    public function __construct(QueueInterface $queue, LoggerInterface $logger, array $options = [])
     {
-        $this->options = $options;
-        $this->logger = $logger;
         $this->queue = $queue;
+        $this->logger = $logger;
+        $this->options = $options;
+    }
 
-        SwooleProcess::signal(SIGCHLD, function () {
-            while ($ret = SwooleProcess::wait(false)) {
-                $this->logger->info("Worker: {$this->getName()} - pid={$ret['pid']} exit.");
-            }
+    /**
+     * This function should be called after worker-process forked.
+     */
+    protected function initWorker()
+    {
+        $processName = "aint-queue - {$this->name} for {$this->queue->getChannel()}";
+        $this->logger->info($this->name.' is started, process name: '.$processName);
+        // set process name
+        SwooleHelper::setProcessName($processName);
+        // required
+        Runtime::enableCoroutine();
+
+        $this->queue->resetConnection();
+
+        // register signal
+        SwooleProcess::signal(SIGUSR1, function () {
+            $this->working = false;
+            $this->workerReloadAble = true;
         });
 
-        $this->process = new SwooleProcess($closure, false, 1, $enableCoroutine);
+        // Catch warning, for example: \Swoole\Coroutine::create(): exceed max number of coroutine xxxx
+        \set_error_handler(function ($errno, $errStr, $errFile, $errLine, array $errcontext) {
+            // error was suppressed with the @-operator
+            if (0 === \error_reporting()) {
+                return false;
+            }
+
+            if (false !== \strpos($errStr, 'exceed max number of coroutine')) {
+                throw new CoroutineNumberExceedException($errStr);
+            }
+
+            throw new \ErrorException($errStr, 0, $errno, $errFile, $errLine);
+        });
+    }
+
+    /**
+     * This function should be called after sub-process exits.
+     */
+    protected function exitWorker()
+    {
+        $processName = "aint-queue - {$this->name} for {$this->queue->getChannel()}";
+        $this->logger->info($this->name.' is stopped, process name: '.$processName);
+        $this->queue->destroyConnection();
     }
 
     /**
      * Start current worker.
      *
-     * @return bool
+     * @return int
      *
      * @throws RuntimeException
      */
-    public function start(): bool
+    public function start(): int
     {
         if ($this->isRunning()) {
             throw new RuntimeException('Worker is running, do not start again!');
         }
 
-        $this->pid = $this->process->start();
+        $this->process = new SwooleProcess([$this, 'work'], $this->redirectStdinStdout, $this->pipeType, $this->enableCoroutine);
 
-        $this->logger->info($this->getName().' - pid='.$this->pid.' start.');
+        $this->pid = (int) $this->process->start();
 
-        return $this->isRunning();
+        return $this->pid;
     }
 
     /**
@@ -102,19 +165,15 @@ abstract class AbstractWorker implements WorkerInterface
     /**
      * Wait worker stop and exit.
      *
-     * @return bool
-     *
      * @throws RuntimeException
      */
-    public function wait(): bool
+    public function wait(): void
     {
         if (!$this->isRunning()) {
             throw new RuntimeException('Worker is already stop!');
         }
 
-        SwooleProcess::kill($this->pid, SIGUSR2);
-
-        return true;
+        SwooleProcess::kill($this->pid, SIGUSR1);
     }
 
     /**
@@ -136,7 +195,7 @@ abstract class AbstractWorker implements WorkerInterface
      */
     public function receive($messageId): void
     {
-        $this->queue->ready($messageId, $this->getName());
+        $this->queue->ready($messageId, $this->name);
     }
 
     /**
@@ -151,43 +210,38 @@ abstract class AbstractWorker implements WorkerInterface
         $id = $attempts = $job = null;
 
         try {
+            if (!$messageId) {
+                throw new InvalidJobException("Invalid message_id: {$messageId}.");
+            }
+
             [$id, $attempts, $job] = $this->queue->get($messageId);
 
             if (null === $job) {
-                $this->logger->error('Unresolvable job.', [
-                    'driver' => get_class($this->queue),
-                    'channel' => $this->queue->getChannel(),
-                    'message_id' => $id,
-                ]);
-
-                return;
+                throw new InvalidJobException('Job popped is null.');
             }
 
-            if (is_callable($job)) {
+            if (\is_callable($job)) {
                 $job($this->queue);
                 $this->queue->remove($id);
             } elseif ($job instanceof JobInterface) {
                 $job->handle($this->queue);
                 $this->queue->remove($id);
             } else {
-                $type = is_object($job) ? get_class($job) : gettype($job);
-                $this->logger->error('Not supported job, type: '.$type.'.', [
-                    'driver' => get_class($this->queue),
-                    'channel' => $this->queue->getChannel(),
-                    'message_id' => $id,
-                ]);
+                $type = \is_object($job) ? \get_class($job) : \gettype($job);
+                throw new InvalidJobException("Not supported job, type: {$type}.");
             }
         } catch (\Throwable $t) {
-            if ($job instanceof JobInterface && $job->canRetry($attempts, $t)) {
-                $delay = max($job->getNextRetryTime($attempts) - time(), 0);
+            if (!$t instanceof InvalidJobException && $job instanceof JobInterface && $job->canRetry($attempts, $t)) {
+                $delay = \max($job->getNextRetryTime($attempts) - \time(), 0);
                 $this->queue->release($id, $delay);
             } else {
-                $this->queue->failed($id);
+                $this->queue->failed($id, $attempts);
             }
-            $this->logger->error(get_class($t).': '.$t->getMessage(), [
-                'driver' => get_class($this->queue),
+            $this->logger->error(\get_class($t).': '.$t->getMessage(), [
+                'driver' => \get_class($this->queue),
                 'channel' => $this->queue->getChannel(),
                 'message_id' => $id,
+                'attempts' => $attempts ?? 0,
             ]);
         }
     }
@@ -202,7 +256,7 @@ abstract class AbstractWorker implements WorkerInterface
     public function executeJobInProcess($messageId): void
     {
         $timeout = $this->options['max_execute_seconds'] ?? 60;
-        [$id, $attempts, $job] = [null, null, null];
+        $id = $attempts = $job = null;
         try {
             [$id, $attempts, $job] = $this->queue->get($messageId);
             $job instanceof SyncJobInterface && $timeout = $job->getTtr();
@@ -229,20 +283,20 @@ abstract class AbstractWorker implements WorkerInterface
 
             $process->run(function ($type, $buffer) {
                 if (Process::ERR === $type) {
-                    fwrite(\STDERR, $buffer);
+                    \fwrite(\STDERR, $buffer);
                 } else {
-                    fwrite(\STDOUT, $buffer);
+                    \fwrite(\STDOUT, $buffer);
                 }
             });
         } catch (\Throwable $t) {
             if ($job instanceof JobInterface && $job->canRetry($attempts, $t)) {
-                $delay = max($job->getNextRetryTime($attempts) - time(), 0);
-                $this->queue->release($id, $delay);
+                $delay = \max($job->getNextRetryTime($attempts) - \time(), 0);
+                $id && $this->queue->release($id, $delay);
             } else {
-                $this->queue->failed($id);
+                $id && $this->queue->failed($id);
             }
-            $this->logger->error(get_class($t).': '.$t->getMessage(), [
-                'driver' => get_class($this->queue),
+            $this->logger->error(\get_class($t).': '.$t->getMessage(), [
+                'driver' => \get_class($this->queue),
                 'channel' => $this->queue->getChannel(),
                 'message_id' => $id,
             ]);

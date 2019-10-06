@@ -26,6 +26,24 @@ abstract class AbstractQueue implements QueueInterface
     protected $channel = 'default';
 
     /**
+     * @see AbstractQueue::isWaiting()
+     */
+    const STATUS_WAITING = 1;
+    /**
+     * @see AbstractQueue::isReserved()
+     */
+    const STATUS_RESERVED = 2;
+    /**
+     * @see AbstractQueue::isDone()
+     */
+    const STATUS_DONE = 3;
+
+    /**
+     * @see AbstractQueue::isFailed()
+     */
+    const STATUS_FAILED = 4;
+
+    /**
      * @var PhpSerializer
      */
     protected $phpSerializer;
@@ -80,5 +98,45 @@ abstract class AbstractQueue implements QueueInterface
         $this->pushDelay = $delay;
 
         return $this;
+    }
+
+    /**
+     * @param int $id of a job message
+     *
+     * @return bool
+     */
+    public function isWaiting(int $id): bool
+    {
+        return self::STATUS_WAITING === $this->getStatus($id);
+    }
+
+    /**
+     * @param int $id of a job message
+     *
+     * @return bool
+     */
+    public function isReserved(int $id): bool
+    {
+        return self::STATUS_RESERVED === $this->getStatus($id);
+    }
+
+    /**
+     * @param int $id of a job message
+     *
+     * @return bool
+     */
+    public function isDone(int $id): bool
+    {
+        return self::STATUS_DONE === $this->getStatus($id);
+    }
+
+    /**
+     * @param int $id of a job message
+     *
+     * @return bool
+     */
+    public function isFailed(int $id): bool
+    {
+        return self::STATUS_DONE === $this->getStatus($id);
     }
 }

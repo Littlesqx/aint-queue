@@ -12,12 +12,13 @@ namespace Littlesqx\AintQueue;
 
 use Littlesqx\AintQueue\Driver\Redis\Queue;
 use Littlesqx\AintQueue\Event\HandlerInterface;
+use Littlesqx\AintQueue\Exception\InvalidJobException;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
 use Psr\Log\LoggerInterface;
 use Swoole\Coroutine;
-use Swoole\Process as SwooleProcess;
+use Swoole\Process;
 use Swoole\Runtime;
 use Swoole\Timer;
 
@@ -43,6 +44,9 @@ class Manager
      */
     protected $workerDirector;
 
+    /**
+     * @var bool
+     */
     protected $listening = false;
 
     public function __construct(QueueInterface $driver, array $options = [])
@@ -56,6 +60,8 @@ class Manager
     protected function init()
     {
         $this->logger = new DefaultLogger();
+
+        $this->workerDirector = new WorkerDirector($this->getQueue(), $this->getLogger(), $this->getOptions()['worker']);
     }
 
     /**
@@ -69,15 +75,7 @@ class Manager
         if ($this->isRunning()) {
             throw new RuntimeException("Listener for queue:{$this->getQueue()->getChannel()} is running!");
         }
-        @file_put_contents($pidFile, getmypid());
-    }
-
-    /**
-     * @throws RuntimeException
-     */
-    protected function setupWorker(): void
-    {
-        $this->workerDirector = new WorkerDirector($this->getOptions()['worker'], $this->getLogger(), $this->getQueue());
+        @\file_put_contents($pidFile, \getmypid());
     }
 
     /**
@@ -98,22 +96,16 @@ class Manager
     protected function registerSignal(): void
     {
         // force exit
-        SwooleProcess::signal(SIGTERM, function () {
+        Process::signal(SIGTERM, function () {
             $this->workerDirector->stop();
             $this->exitMaster();
         });
-        // force killed
-        SwooleProcess::signal(SIGKILL, function () {
-            $this->workerDirector->stop();
-            $this->exitMaster();
-        });
-        // custom signal - exit smoothly
-        SwooleProcess::signal(SIGUSR1, function () {
-            $this->workerDirector->wait();
-            $this->exitMaster();
+        // custom signal - reload workers
+        Process::signal(SIGUSR1, function () {
+            $this->workerDirector->reload();
         });
         // custom signal - record process status
-        SwooleProcess::signal(SIGUSR2, function () {
+        Process::signal(SIGUSR2, function () {
             // TODO
         });
     }
@@ -158,6 +150,14 @@ class Manager
     }
 
     /**
+     * @return WorkerDirector
+     */
+    public function getWorkerDirector(): WorkerDirector
+    {
+        return $this->workerDirector;
+    }
+
+    /**
      * Get current queue instance.
      *
      * @return QueueInterface|Queue
@@ -174,7 +174,11 @@ class Manager
      */
     public function listen(): void
     {
-        $this->setupWorker();
+        $this->workerDirector->start();
+
+        \register_shutdown_function([$this, 'exitMaster']);
+
+        $this->setupPidFile();
 
         $this->registerSignal();
 
@@ -187,37 +191,29 @@ class Manager
 
         Coroutine::create(function () {
             $this->registerTimer();
-            $this->setupPidFile();
             while ($this->listening) {
                 try {
-                    [$id, , $job] = $this->queue->pop();
-
-                    if (null === $job) {
-                        if ($id) {
-                            $this->getLogger()->error('Invalid job, id = '.$id, [
-                                'driver' => get_class($this->queue),
-                                'channel' => $this->queue->getChannel(),
-                                'message_id' => $id,
-                            ]);
-                            $this->getQueue()->failed($id);
-                        } else {
-                            Coroutine::sleep($this->getSleepTime());
-                        }
+                    [$id, $attempts, $job] = $this->queue->pop();
+                    if (!$id) {
+                        Coroutine::sleep($this->options['sleep_seconds'] ?? 1);
                         continue;
+                    }
+                    if (null === $job) {
+                        throw new InvalidJobException('Job popped is null.');
                     }
                     $this->workerDirector->dispatch($id, $job);
                 } catch (\Throwable $t) {
                     $this->getLogger()->error('Job dispatch error, '.$t->getMessage(), [
-                        'driver' => get_class($this->queue),
+                        'driver' => \get_class($this->queue),
                         'channel' => $this->queue->getChannel(),
                         'message_id' => $id ?? null,
+                        'attempts' => $attempts ?? null,
                     ]);
-                    !empty($id) && $this->getQueue()->failed($id);
+                    !empty($id) && $this->getQueue()->failed($id, $attempts ?? 0);
                 }
 
                 if ($this->memoryExceeded()) {
-                    $this->getLogger()->info('Memory exceeded, exit smoothly.');
-                    $this->workerDirector->wait();
+                    $this->getLogger()->info('Memory exceeded, force to exit.');
                     $this->exitMaster();
                 }
             }
@@ -237,59 +233,6 @@ class Manager
     }
 
     /**
-     * Execute job in current process.
-     *
-     * @param $messageId
-     *
-     * @throws \Throwable
-     */
-    public function executeJob($messageId): void
-    {
-        $id = $attempts = $job = null;
-
-        try {
-            [$id, $attempts, $job] = $this->queue->get($messageId);
-
-            if (null === $job) {
-                $this->getLogger()->error('Unresolvable job.', [
-                    'driver' => get_class($this->queue),
-                    'channel' => $this->queue->getChannel(),
-                    'message_id' => $id,
-                ]);
-
-                return;
-            }
-
-            if (is_callable($job)) {
-                $job($this->queue);
-                $this->queue->remove($id);
-            } elseif ($job instanceof JobInterface) {
-                $job->handle($this->queue);
-                $this->queue->remove($id);
-            } else {
-                $type = is_object($job) ? get_class($job) : gettype($job);
-                $this->getLogger()->error('Not supported job, type: '.$type.'.', [
-                    'driver' => get_class($this->queue),
-                    'channel' => $this->queue->getChannel(),
-                    'message_id' => $id,
-                ]);
-            }
-        } catch (\Throwable $t) {
-            if ($job instanceof JobInterface && $job->canRetry($attempts, $t)) {
-                $delay = max($job->getNextRetryTime($attempts) - time(), 0);
-                $this->queue->release($id, $delay);
-            } else {
-                $this->queue->failed($id);
-            }
-            $this->getLogger()->error(get_class($t).': '.$t->getMessage(), [
-                'driver' => get_class($this->queue),
-                'channel' => $this->queue->getChannel(),
-                'message_id' => $id,
-            ]);
-        }
-    }
-
-    /**
      * Get manager's memory limit.
      *
      * @return float
@@ -306,7 +249,7 @@ class Manager
      */
     public function getSleepTime(): int
     {
-        return (int) max($this->options['sleep_seconds'] ?? 0, 0);
+        return (int) \max($this->options['sleep_seconds'] ?? 0, 0);
     }
 
     /**
@@ -315,8 +258,10 @@ class Manager
     public function exitMaster(): void
     {
         Timer::clearAll();
+        $this->workerDirector->stop();
         $this->listening = false;
-        @unlink($this->getPidFile());
+        @\unlink($this->getPidFile());
+        // TODO: report exec event
     }
 
     /**
@@ -335,10 +280,10 @@ class Manager
     public function isRunning(): bool
     {
         $pidFile = $this->getPidFile();
-        if (file_exists($pidFile)) {
-            $pid = (int) file_get_contents($pidFile);
+        if (\file_exists($pidFile)) {
+            $pid = (int) \file_get_contents($pidFile);
 
-            return SwooleProcess::kill($pid, 0);
+            return Process::kill($pid, 0);
         }
 
         return false;
@@ -350,10 +295,10 @@ class Manager
     protected function checkQueueStatus()
     {
         try {
-            [$waiting, $delayed, $reserved, $done, $failed, $total] = $this->getQueue()->status();
+            [$waiting, $reserved, $delayed, $done, $failed, $total] = $this->getQueue()->status();
         } catch (\Throwable $t) {
             $this->getLogger()->error('Error when getting queue\'s status, '.$t->getMessage(), [
-                'driver' => get_class($this->queue),
+                'driver' => \get_class($this->queue),
                 'channel' => $this->queue->getChannel(),
             ]);
 
@@ -361,19 +306,22 @@ class Manager
         }
 
         $maxWaiting = $this->getOptions()['warning_thresholds']['waiting_job_number'] ?? PHP_INT_MAX;
+        $maxReserved = $this->getOptions()['warning_thresholds']['reserved_job_number'] ?? PHP_INT_MAX;
 
-        if ($waiting >= $maxWaiting) {
+        $waiting = \array_sum($waiting);
+
+        if ($waiting >= $maxWaiting || $reserved >= $maxReserved) {
             $handlers = $this->getOptions()['warning_thresholds']['warning_handler'] ?? [];
             foreach ($handlers as $handlerClass) {
-                if (class_exists($handlerClass) && ($handler = new $handlerClass())
+                if (\class_exists($handlerClass) && ($handler = new $handlerClass())
                     && $handler instanceof HandlerInterface
                 ) {
                     try {
-                        $message = 'current waiting jobs\' number is '.$waiting.'!';
-                        $handler->handle($message, null, compact('waiting', 'delayed', 'reserved', 'done', 'failed', 'total'));
+                        $message = 'Current waiting jobs\' number is '.$waiting.'!';
+                        $handler->handle($message, null, \compact('waiting', 'delayed', 'reserved', 'done', 'failed', 'total'));
                     } catch (\Throwable $t) {
                         $this->getLogger()->error('Handler error, '.$t->getMessage(), [
-                            'driver' => get_class($this->queue),
+                            'driver' => \get_class($this->queue),
                             'channel' => $this->queue->getChannel(),
                             'warning_message' => $message,
                         ]);

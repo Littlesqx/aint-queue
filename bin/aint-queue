@@ -21,6 +21,7 @@ use Littlesqx\AintQueue\Console\QueueListenCommand;
 use Littlesqx\AintQueue\Console\QueueStatusCommand;
 use Littlesqx\AintQueue\Console\QueueClearCommand;
 use Littlesqx\AintQueue\Console\QueueStopCommand;
+use Littlesqx\AintQueue\Console\QueueReloadCommand;
 
 $app = new Application();
 
@@ -30,7 +31,7 @@ $app->addCommands([
     new QueueStatusCommand(),
     new QueueClearCommand(),
     new QueueStopCommand(),
+    new QueueReloadCommand(),
 ]);
-$app->setAutoExit(true);
 
 $app->run();

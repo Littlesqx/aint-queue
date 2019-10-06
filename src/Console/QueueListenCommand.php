@@ -29,7 +29,7 @@ class QueueListenCommand extends AbstractCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         if ($this->manager->isRunning()) {
-            throw new RuntimeException(sprintf('[Error] Listener for queue %s has been started.', $input->getOption('channel')));
+            throw new RuntimeException(\sprintf('[Error] Listener for queue %s has been started.', $input->getOption('channel')));
         }
         // blocking
         $this->manager->listen();

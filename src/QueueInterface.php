@@ -81,11 +81,12 @@ interface QueueInterface
      *
      * @param $id
      * @param string $worker
+     * @param bool   $ontoFront
      *
      * @throws RuntimeException
      * @throws \Throwable
      */
-    public function ready($id, string $worker);
+    public function ready($id, string $worker, bool $ontoFront = false);
 
     /**
      * Release a job which was failed to execute.
@@ -99,18 +100,12 @@ interface QueueInterface
      * Fail a job.
      *
      * @param $id
+     * @param string|null $payload
      *
      * @throws RuntimeException
      * @throws \Throwable
      */
-    public function failed($id);
-
-    /**
-     * Get current queue's size.
-     *
-     * @return int
-     */
-    public function size(): int;
+    public function failed($id, $payload = null);
 
     /**
      * Clear current queue.
@@ -132,6 +127,11 @@ interface QueueInterface
     public function resetConnection(): void;
 
     /**
+     * Disconnect the connection.
+     */
+    public function destroyConnection(): void;
+
+    /**
      * Delay to execute the job.
      *
      * @param int $delay
@@ -139,4 +139,32 @@ interface QueueInterface
      * @return $this
      */
     public function delay(int $delay);
+
+    /**
+     * @param int $id of a job message
+     *
+     * @return bool
+     */
+    public function isWaiting(int $id): bool;
+
+    /**
+     * @param int $id of a job message
+     *
+     * @return bool
+     */
+    public function isReserved(int $id): bool;
+
+    /**
+     * @param int $id of a job message
+     *
+     * @return bool
+     */
+    public function isDone(int $id): bool;
+
+    /**
+     * @param int $id of a job message
+     *
+     * @return bool
+     */
+    public function isFailed(int $id): bool;
 }

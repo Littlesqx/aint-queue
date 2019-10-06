@@ -30,7 +30,7 @@ class QueueRunCommand extends AbstractCommand
     {
         $messageId = $input->getOption('id');
 
-        $this->manager->executeJob($messageId);
+        $this->manager->getWorkerDirector()->getProcessWorker()->executeJob($messageId);
 
         return 0;
     }

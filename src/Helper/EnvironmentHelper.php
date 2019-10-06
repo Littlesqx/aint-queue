@@ -50,6 +50,6 @@ class EnvironmentHelper
      */
     public static function getCurrentMemoryUsage(): float
     {
-        return memory_get_usage(true) / 1024 / 1024;
+        return \memory_get_usage(true) / 1024 / 1024;
     }
 }

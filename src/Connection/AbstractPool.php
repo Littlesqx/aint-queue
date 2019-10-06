@@ -10,6 +10,8 @@
 
 namespace Littlesqx\AintQueue\Connection;
 
+use Littlesqx\AintQueue\Exception\RuntimeException;
+
 abstract class AbstractPool implements PoolInterface
 {
     /**
@@ -55,6 +57,10 @@ abstract class AbstractPool implements PoolInterface
         }
 
         $connection = $this->channel->pop($this->options['wait_timeout'] ?? 3);
+
+        if (!$connection) {
+            throw new RuntimeException('Can not pop connection from pool.');
+        }
 
         if (!$this->checkConnection($connection)) {
             return $this->createConnection();

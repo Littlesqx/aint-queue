@@ -7,4 +7,5 @@ composer.lock
 .subsplit
 .php_cs.cache
 .phpunit.result.cache
-./index.php
+index.php
+src/Test

@@ -40,7 +40,7 @@ class Factory
      */
     public static function getInstance(string $type): SerializerInterface
     {
-        if (!in_array($type, [self::SERIALIZER_TYPE_PHP, self::SERIALIZER_TYPE_CLOSURE], true)) {
+        if (!\in_array($type, [self::SERIALIZER_TYPE_PHP, self::SERIALIZER_TYPE_CLOSURE], true)) {
             throw new InvalidArgumentException("The arg type: {$type} is invalid.");
         }
         if (!isset(self::$instances[$type])) {

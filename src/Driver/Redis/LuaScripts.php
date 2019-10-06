@@ -13,42 +13,61 @@ namespace Littlesqx\AintQueue\Driver\Redis;
 /**
  * Class LuaScripts.
  *
- * @credit This file is modified from illuminate/queue.
+ * @credit This file is modified from illuminate/queue
  */
 class LuaScripts
 {
     /**
-     * Get the Lua script for computing the size of queue.
+     * Get the Lua script for popping waiting job.
      *
-     * KEYS[1] - The name of the primary queue
-     * KEYS[2] - The name of the "delayed" queue
-     * KEYS[3] - The name of the "reserved" queue
+     * KEYS[1] - The "waiting" queue we pop jobs from, for example: queues:foo:waiting
+     * KEYS[2] - The "reserved" set we reserve jobs onto, for example: queues:foo:reserved
+     * KEYS[3] - The "attempt" queue we record jobs' attempt number, for example: queues:foo:attempts
+     * ARGV[1] - Whether should add attempt time
      *
      * @return string
      */
-    public static function size()
+    public static function pop()
     {
         return <<<'LUA'
-return redis.call('llen', KEYS[1]) + redis.call('zcard', KEYS[2]) + redis.call('hlen', KEYS[3])
+-- Pop a job from queue...
+local id = redis.call('rpop', KEYS[1])
+if (id ~= false) then
+    -- Add the job onto the "reserved" set and add attempt time of the job...
+    redis.call('hset', KEYS[2], id, 0)
+    if (ARGV[1] ~= nil) then
+        local attempts = redis.call('hincrby', KEYS[3], id, 1)
+    end
+end
+return id
 LUA;
     }
 
     /**
-     * Get the Lua script for reserving waiting job.
+     * Get the Lua script for pushing new job onto waiting queue.
      *
-     * KEYS[1] - The "reserved" set we reserve jobs onto, for example: queues:foo:reserved
-     * KEYS[2] - The "attempt" queue we record jobs' attempt number, for example: queues:foo:attempts
-     * ARGV[1] - The id of the job to add to the "reserved" set
+     * KEYS[1] - The "waiting" queue we pop jobs from, for example: queues:foo:waiting
+     * KEYS[2] - The "reserved" set we reserve jobs onto, for example: queues:foo:reserved
+     * ARGV[1] - The id of job pushed
+     * ARGV[2] - Whether should push onto the head of queue
      *
      * @return string
      */
-    public static function reserve()
+    public static function push()
     {
         return <<<'LUA'
--- Add the job onto the "reserved" set and add attempt time of the job...
-local attempts = redis.call('hincrby', KEYS[2], ARGV[1], 1)
-redis.call('hset', KEYS[1], ARGV[1], attempts)
-return true
+if (ARGV[1] ~= nil) then
+    -- Push job onto waiting queue...
+    if (ARGV[2] == 1) then
+        redis.call('rpush', KEYS[1], ARGV[1])
+    else
+        redis.call('lpush', KEYS[1], ARGV[1])
+    end
+    -- Drop reserved record...
+    redis.call('hdel', KEYS[2], ARGV[1])
+    return true
+end
+return false
 LUA;
     }
 
@@ -57,7 +76,7 @@ LUA;
      *
      * KEYS[1] - The "delayed" queue we release jobs onto, for example: queues:foo:delayed
      * KEYS[2] - The queue the jobs are currently on, for example: queues:foo:reserved
-     * ARGV[1] - The id of the job to add to the "delayed" queue
+     * ARGV[1] - The id of delayed job will be added onto the "delayed" queue
      * ARGV[2] - The UNIX timestamp at which the job should become available
      *
      * @return string
@@ -72,6 +91,26 @@ redis.call('hdel', KEYS[2], ARGV[1])
 redis.call('zadd', KEYS[1], ARGV[2], ARGV[1])
 
 return true
+LUA;
+    }
+
+    /**
+     * Get the Lua script for releasing reserved jobs with delay.
+     *
+     * KEYS[1] - The "failed" set we record jobs to, for example: queues:foo:failed
+     * KEYS[2] - The queue the jobs are currently on, for example: queues:foo:reserved
+     * ARGV[1] - The id of failed job will be added onto the "failed" set
+     * ARGV[2] - Payload of failed job execution
+     *
+     * @return string
+     */
+    public static function fail()
+    {
+        return <<<'LUA'
+if (ARGV[1] ~= nil) then
+    redis.call('hset', KEYS[1], ARGV[1], ARGV[2])
+    redis.call('hdel', KEYS[2], ARGV[1])
+end
 LUA;
     }
 
