@@ -28,10 +28,9 @@ return [
         'pid_path' => '/var/run/aint-queue',
         'memory_limit' => 96, // Mb
         'sleep_seconds' => 2,
-        'warning_thresholds' => [
-            'warning_handler' => [],
-            'waiting_job_number' => 50,
-            'reserved_job_number' => 100,
+        'job_snapshot' => [
+            'interval' => 5 * 60,
+            'handler' => []
         ],
         'worker' => [
             'process_worker' => [
@@ -43,7 +42,7 @@ return [
                 'enable' => true,
                 'dynamic_mode' => true,
                 'memory_limit' => 96, // Mb
-                'min_worker_number' => 3,
+                'min_worker_number' => 5,
                 'max_worker_number' => 50,
             ],
             'coroutine_worker' => [

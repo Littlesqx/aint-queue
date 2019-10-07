@@ -59,10 +59,10 @@ class CoroutineWorker extends AbstractWorker
                         'message_id' => $messageId,
                     ]);
                     if ($t instanceof CoroutineNumberExceedException) {
-                        // TODO: event report...
+                        Coroutine::sleep(60);
                     }
                     if ($this->queue->isReserved($messageId)) {
-                        $this->queue->release($messageId, 5);
+                        $this->queue->release($messageId, 60);
                     }
                 }
 
