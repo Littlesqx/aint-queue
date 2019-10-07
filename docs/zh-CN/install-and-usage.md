@@ -25,6 +25,8 @@ composer require littlesqx/aint-queue -vvv
 ```php
 <?php
 
+use Littlesqx\AintQueue\Driver\Redis\Queue as RedisQueue;
+
 return [
     // channel => [...config]
     'default' => [
@@ -41,27 +43,31 @@ return [
             ],
         ],
         'pid_path' => '/var/run/aint-queue',
-        'memory_limit' => 512, // Mb
-        'sleep_seconds' => 3,
-        'warning_thresholds' => [
-            'warning_handler' => [
-                JobOverflowEvent::class,
-            ],
-            'waiting_job_number' => 50,
-            'ready_job_number' => 50,
+        'memory_limit' => 96, // Mb
+        'sleep_seconds' => 2,
+        'job_snapshot' => [
+            'interval' => 5 * 60,
+            'handler' => [
+
+            ]
         ],
         'worker' => [
             'process_worker' => [
                 'enable' => true,
-                'max_execute_seconds' => 0,
+                'memory_limit' => 96, // Mb
+                'max_execute_seconds' => 10,
             ],
             'process_pool_worker' => [
                 'enable' => true,
-                'memory_limit' => 512, // Mb
-                'worker_number' => 3,
+                'dynamic_mode' => true,
+                'memory_limit' => 96, // Mb
+                'min_worker_number' => 5,
+                'max_worker_number' => 50,
             ],
             'coroutine_worker' => [
                 'enable' => true,
+                'memory_limit' => 96, // Mb
+                'max_coroutine' => 4096,
             ],
         ],
     ],
@@ -89,10 +95,6 @@ return [
 - sleep_seconds
 
   监听者在做一个不断轮训的操作，如果没有任务等待，循环会不断 pop 操作，耗用比较多 cpu 资源，设定一定的休眠时间有一定帮助。
-
-- warning_thresholds
-
-  监听进程还有一个定时器检测等待队列的数目，当等待数目达到阈值（`waiting_job_number`）时，会触发 `waring_handler` 事件的执行。
 
 - worker
 
@@ -127,11 +129,12 @@ Available commands:
   help          Displays help for a command
   list          Lists commands
  queue
-  queue:clear   Clear the queue.
-  queue:listen  Listen the queue.
-  queue:run     Run a job pop from the queue.
-  queue:status  Get the execute status of specific queue.
-  queue:stop    Stop listening the queue.
+    queue:clear   Clear the queue.
+    queue:listen  Listen the queue.
+    queue:reload  Reload worker for the queue.
+    queue:run     Run a job pop from the queue.
+    queue:status  Get the execute status of specific queue.
+    queue:stop    Stop listening the queue.
   
   ```
   
@@ -153,11 +156,11 @@ Available commands:
   ```bash
   The master-process of default-queue is not running!
   The status of default-queue:
-  ┌─────────┬─────────┬──────────┬──────┬───────┐
-  │ waiting │ delayed │ reserved │ done │ total │
-  ├─────────┼─────────┼──────────┼──────┼───────┤
-  │ 0       │ 0       │ 0        │ 0    │ 0     │
-  └─────────┴─────────┴──────────┴──────┴───────┘
+  ┌─────────┬──────────┬─────────┬───────┬────────┬───────┐
+  │ waiting │ reserved │ delayed │ done  │ failed │ total │
+  ├─────────┼──────────┼─────────┼───────┼────────┼───────┤
+  │ 0/0/0/0 │ 0        │ 0       │ 26000 │ 0      │ 26000 │
+  └─────────┴──────────┴─────────┴───────┴────────┴───────┘
   ```
   
   - queue-stop，退出监听进程
