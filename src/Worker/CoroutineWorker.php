@@ -50,9 +50,7 @@ class CoroutineWorker extends AbstractWorker
                     break;
                 }
                 try {
-                    Coroutine::create(function () use ($messageId) {
-                        $this->executeJob($messageId);
-                    });
+                    Coroutine::create([$this, 'executeJob'], $messageId);
                 } catch (\Throwable $t) {
                     $e = \get_class($t);
                     $this->logger->error("Job exec error,  {$e}: {$t->getMessage()}", [
