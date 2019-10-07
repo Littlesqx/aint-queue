@@ -91,7 +91,7 @@ class ProcessPoolWorker extends AbstractWorker
 
         if ($this->options['dynamic_mode'] ?? false) {
             // check worker status, create or release workers
-            Timer::tick(1000 * 2 * 5, function () {
+            Timer::tick(1000 * 60 * 5, function () {
                 [[$beforeDispatch, $process, $processPool, $co]] = $this->queue->status();
 
                 $healthWorkerNumber = max($this->minWorkerNum, min((int) ($processPool / 5), $this->maxWorkerNum));
