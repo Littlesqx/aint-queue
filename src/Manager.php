@@ -10,17 +10,14 @@
 
 namespace Littlesqx\AintQueue;
 
+use Psr\Log\LoggerInterface;
+use Swoole\{Coroutine, Process, Runtime, Timer};
 use Littlesqx\AintQueue\Driver\Redis\Queue;
-use Littlesqx\AintQueue\Event\HandlerInterface;
 use Littlesqx\AintQueue\Exception\InvalidJobException;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
-use Psr\Log\LoggerInterface;
-use Swoole\Coroutine;
-use Swoole\Process;
-use Swoole\Runtime;
-use Swoole\Timer;
+
 
 class Manager
 {
@@ -54,14 +51,8 @@ class Manager
         $this->queue = $driver;
         $this->options = $options;
 
-        $this->init();
-    }
-
-    protected function init()
-    {
         $this->logger = new DefaultLogger();
-
-        $this->workerDirector = new WorkerDirector($this->getQueue(), $this->getLogger(), $this->getOptions()['worker']);
+        $this->workerDirector = new WorkerDirector($this->queue, $this->logger, $options['worker'] ?? []);
     }
 
     /**
@@ -73,7 +64,7 @@ class Manager
     {
         $pidFile = $this->getPidFile();
         if ($this->isRunning()) {
-            throw new RuntimeException("Listener for queue:{$this->getQueue()->getChannel()} is running!");
+            throw new RuntimeException("Listener for queue:{$this->queue->getChannel()} is running!");
         }
         @\file_put_contents($pidFile, \getmypid());
     }
@@ -87,7 +78,7 @@ class Manager
     {
         $root = $this->options['pid_path'] ?? '';
 
-        return $root."/{$this->getQueue()->getChannel()}-master.pid";
+        return $root."/{$this->queue->getChannel()}-master.pid";
     }
 
     /**
@@ -104,10 +95,6 @@ class Manager
         Process::signal(SIGUSR1, function () {
             $this->workerDirector->reload();
         });
-        // custom signal - record process status
-        Process::signal(SIGUSR2, function () {
-            // TODO
-        });
     }
 
     /**
@@ -120,9 +107,13 @@ class Manager
             $this->queue->migrateExpired();
         });
         // check queue status
-        Timer::tick(1000 * 60 * 5, function () {
-            $this->checkQueueStatus();
-        });
+        $handlers = $this->options['job_snapshot']['handler'] ?? [];
+        if (!empty($handlers)) {
+            $interval = (int) $this->options['job_snapshot']['interval'] ?? 60 * 5;
+            Timer::tick(1000 * $interval, function () {
+                $this->checkQueueStatus();
+            });
+        }
     }
 
     /**
@@ -137,16 +128,6 @@ class Manager
         $this->logger = $logger;
 
         return $this;
-    }
-
-    /**
-     * Get current work logger.
-     *
-     * @return LoggerInterface
-     */
-    public function getLogger(): LoggerInterface
-    {
-        return $this->logger;
     }
 
     /**
@@ -182,7 +163,7 @@ class Manager
 
         $this->registerSignal();
 
-        $this->getQueue()->retryReserved();
+        $this->queue->retryReserved();
 
         $this->listening = true;
 
@@ -203,17 +184,17 @@ class Manager
                     }
                     $this->workerDirector->dispatch($id, $job);
                 } catch (\Throwable $t) {
-                    $this->getLogger()->error('Job dispatch error, '.$t->getMessage(), [
+                    $this->logger->error('Job dispatch error, '.$t->getMessage(), [
                         'driver' => \get_class($this->queue),
                         'channel' => $this->queue->getChannel(),
                         'message_id' => $id ?? null,
                         'attempts' => $attempts ?? null,
                     ]);
-                    !empty($id) && $this->getQueue()->failed($id, $attempts ?? 0);
+                    !empty($id) && $this->queue->failed($id, $attempts ?? 0);
                 }
 
                 if ($this->memoryExceeded()) {
-                    $this->getLogger()->info('Memory exceeded, force to exit.');
+                    $this->logger->info('Memory exceeded, force to exit.');
                     $this->exitMaster();
                 }
             }
@@ -261,7 +242,6 @@ class Manager
         $this->workerDirector->stop();
         $this->listening = false;
         @\unlink($this->getPidFile());
-        // TODO: report exec event
     }
 
     /**
@@ -295,39 +275,28 @@ class Manager
     protected function checkQueueStatus()
     {
         try {
-            [$waiting, $reserved, $delayed, $done, $failed, $total] = $this->getQueue()->status();
+            [$waiting, $reserved, $delayed, $done, $failed, $total] = $this->queue->status();
+            $snapshot = compact('waiting', 'reserved', 'delayed', 'done', 'failed', 'total');
+            $handlers = $this->options['job_snapshot']['handler'] ?? [];
+            foreach ($handlers as $handler) {
+                if (!\is_string($handler) || !\class_exists($handler)) {
+                    $this->logger->warning('Invalid JobSnapshotHandler or class not exists.');
+                    continue;
+                }
+                $handler = new $handler();
+                if (!$handler instanceof JobSnapshotHandlerInterface) {
+                    $this->logger->warning('JobSnapshotHandler must implement JobSnapshotHandlerInterface.');
+                    continue;
+                }
+                $handler->handle($snapshot);
+            }
         } catch (\Throwable $t) {
-            $this->getLogger()->error('Error when getting queue\'s status, '.$t->getMessage(), [
+            $this->logger->error('Error when exec JobSnapshotHandler, '.$t->getMessage(), [
                 'driver' => \get_class($this->queue),
                 'channel' => $this->queue->getChannel(),
             ]);
 
             return;
-        }
-
-        $maxWaiting = $this->getOptions()['warning_thresholds']['waiting_job_number'] ?? PHP_INT_MAX;
-        $maxReserved = $this->getOptions()['warning_thresholds']['reserved_job_number'] ?? PHP_INT_MAX;
-
-        $waiting = \array_sum($waiting);
-
-        if ($waiting >= $maxWaiting || $reserved >= $maxReserved) {
-            $handlers = $this->getOptions()['warning_thresholds']['warning_handler'] ?? [];
-            foreach ($handlers as $handlerClass) {
-                if (\class_exists($handlerClass) && ($handler = new $handlerClass())
-                    && $handler instanceof HandlerInterface
-                ) {
-                    try {
-                        $message = 'Current waiting jobs\' number is '.$waiting.'!';
-                        $handler->handle($message, null, \compact('waiting', 'delayed', 'reserved', 'done', 'failed', 'total'));
-                    } catch (\Throwable $t) {
-                        $this->getLogger()->error('Handler error, '.$t->getMessage(), [
-                            'driver' => \get_class($this->queue),
-                            'channel' => $this->queue->getChannel(),
-                            'warning_message' => $message,
-                        ]);
-                    }
-                }
-            }
         }
     }
 }

@@ -9,10 +9,10 @@
 
 `aint-queue` 基于以下 package 开发：
 
-- predis/predis
 - psr/log
-- symfony/process
 - monolog/monolog
-- jeremeamia/superclosure
+- predis/predis
 - symfony/console
+- symfony/process
 - phpunit/phpunit
+- jeremeamia/superclosure

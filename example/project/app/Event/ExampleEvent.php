@@ -10,21 +10,16 @@
 
 namespace App\Event;
 
-use Littlesqx\AintQueue\Event\HandlerInterface;
+use Littlesqx\AintQueue\JobSnapshotHandlerInterface;
 
-class ExampleEvent implements HandlerInterface
+class ExampleEvent implements JobSnapshotHandlerInterface
 {
+
     /**
-     * Handle event.
-     *
-     * @param string $message
-     * @param $error
-     * @param $payload
-     *
-     * @return mixed
+     * @param array $snapshot
      */
-    public function handle(string $message, $error, $payload)
+    public function handle(array $snapshot): void
     {
-        echo "$message \n";
+        // TODO: implements handle()
     }
 }
