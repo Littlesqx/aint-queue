@@ -98,7 +98,7 @@ class ProcessPoolWorker extends AbstractWorker
 
                 $differ = \count($this->pool) - $healthWorkerNumber;
 
-                while ($differ !== 0) {
+                while (0 !== $differ) {
                     // create more workers
                     $differ < 0 && $this->createWorker() && $differ++;
                     // release idle workers

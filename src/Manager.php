@@ -10,14 +10,16 @@
 
 namespace Littlesqx\AintQueue;
 
-use Psr\Log\LoggerInterface;
-use Swoole\{Coroutine, Process, Runtime, Timer};
 use Littlesqx\AintQueue\Driver\Redis\Queue;
 use Littlesqx\AintQueue\Exception\InvalidJobException;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
-
+use Psr\Log\LoggerInterface;
+use Swoole\Coroutine;
+use Swoole\Process;
+use Swoole\Runtime;
+use Swoole\Timer;
 
 class Manager
 {

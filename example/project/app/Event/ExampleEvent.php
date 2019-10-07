@@ -14,7 +14,6 @@ use Littlesqx\AintQueue\JobSnapshotHandlerInterface;
 
 class ExampleEvent implements JobSnapshotHandlerInterface
 {
-
     /**
      * @param array $snapshot
      */

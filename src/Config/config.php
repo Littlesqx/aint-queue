@@ -30,7 +30,7 @@ return [
         'sleep_seconds' => 2,
         'job_snapshot' => [
             'interval' => 5 * 60,
-            'handler' => []
+            'handler' => [],
         ],
         'worker' => [
             'process_worker' => [

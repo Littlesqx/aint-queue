@@ -31,8 +31,7 @@ return [
         'job_snapshot' => [
             'interval' => 5 * 60,
             'handler' => [
-
-            ]
+            ],
         ],
         'worker' => [
             'process_worker' => [
