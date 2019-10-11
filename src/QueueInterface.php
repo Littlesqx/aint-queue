@@ -45,11 +45,12 @@ interface QueueInterface
     /**
      * Push an executable job message into queue.
      *
-     * @param $message
+     * @param \Closure|JobInterface $message
+     * @param int $delay
      *
      * @return mixed
      */
-    public function push($message);
+    public function push($message, int $delay = 0);
 
     /**
      * Pop a job message from waiting-queue.
@@ -135,15 +136,6 @@ interface QueueInterface
      * Disconnect the connection.
      */
     public function destroyConnection(): void;
-
-    /**
-     * Delay to execute the job.
-     *
-     * @param int $delay
-     *
-     * @return $this
-     */
-    public function delay(int $delay);
 
     /**
      * @param int $id of a job message

@@ -91,13 +91,14 @@ class Queue extends AbstractQueue
     /**
      * Push an executable job message into queue.
      *
-     * @param $message
+     * @param \Closure|JobInterface $message
+     * @param int $delay
      *
      * @return mixed
      *
      * @throws \Throwable
      */
-    public function push($message): void
+    public function push($message, int $delay = 0): void
     {
         $serializedMessage = null;
         $serializerType = null;
@@ -123,7 +124,7 @@ class Queue extends AbstractQueue
         $id = $redis->incr("{$this->channelPrefix}{$this->getChannel()}:message_id");
         $redis->hset("{$this->channelPrefix}{$this->getChannel()}:messages", $id, $pushMessage);
 
-        if ($this->pushDelay > 0) {
+        if ($delay > 0) {
             $redis->zadd("{$this->channelPrefix}{$this->getChannel()}:delayed", [$id => time() + $this->pushDelay]);
         } else {
             $redis->lpush("{$this->channelPrefix}{$this->getChannel()}:waiting", [$id]);

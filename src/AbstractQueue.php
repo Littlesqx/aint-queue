@@ -52,12 +52,6 @@ abstract class AbstractQueue implements QueueInterface
      * @var ClosureSerializer
      */
     protected $closureSerializer;
-
-    /**
-     * @var int
-     */
-    protected $pushDelay = 0;
-
     /**
      * @var array
      */
@@ -85,20 +79,6 @@ abstract class AbstractQueue implements QueueInterface
      * Moved the expired job to waiting queue.
      */
     abstract public function migrateExpired(): void;
-
-    /**
-     * Delay to execute the job.
-     *
-     * @param int $delay
-     *
-     * @return $this
-     */
-    public function delay(int $delay)
-    {
-        $this->pushDelay = $delay;
-
-        return $this;
-    }
 
     /**
      * @param int $id of a job message
