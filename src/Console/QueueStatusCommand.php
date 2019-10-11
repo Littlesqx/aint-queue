@@ -32,8 +32,6 @@ class QueueStatusCommand extends AbstractCommand
 
         [$waiting, $reserved, $delayed, $done, $failed, $total] = $this->manager->getQueue()->status();
 
-        $waiting = implode('/', $waiting);
-
         $masterStatus = "The master-process of {$channel}-queue is ";
         if ($this->manager->isRunning()) {
             $masterStatus .= 'running!';

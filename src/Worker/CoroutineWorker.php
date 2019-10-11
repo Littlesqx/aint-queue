@@ -38,15 +38,15 @@ class CoroutineWorker extends AbstractWorker
                 $this->exitWorker();
             });
             while ($this->working) {
-                $messageId = $this->queue->popReady($this->name);
+                $messageId = $this->queue->pop();
                 if (!$messageId) {
-                    Coroutine::sleep(1);
+                    Coroutine::sleep($this->options['sleep_seconds'] ?? 1);
                     continue;
                 }
                 // If current worker is stopped,
-                // the job popped will be push onto ready queue again.
+                // the job popped will be push onto waiting queue again.
                 if (!$this->working) {
-                    $this->queue->ready($messageId, $this->name, true);
+                    $this->queue->release($messageId);
                     break;
                 }
                 try {

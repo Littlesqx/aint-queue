@@ -18,7 +18,7 @@ abstract class AbstractQueue implements QueueInterface
     /**
      * @var string
      */
-    protected $channelPrefix = 'aint-queue';
+    protected $channelPrefix = 'aint-queue:';
 
     /**
      * @var string

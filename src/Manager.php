@@ -11,14 +11,11 @@
 namespace Littlesqx\AintQueue;
 
 use Littlesqx\AintQueue\Driver\Redis\Queue;
-use Littlesqx\AintQueue\Exception\InvalidJobException;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
 use Psr\Log\LoggerInterface;
-use Swoole\Coroutine;
 use Swoole\Process;
-use Swoole\Runtime;
 use Swoole\Timer;
 
 class Manager
@@ -42,11 +39,6 @@ class Manager
      * @var WorkerDirector
      */
     protected $workerDirector;
-
-    /**
-     * @var bool
-     */
-    protected $listening = false;
 
     public function __construct(QueueInterface $driver, array $options = [])
     {
@@ -108,6 +100,13 @@ class Manager
         Timer::tick(1000, function () {
             $this->queue->migrateExpired();
         });
+
+        Timer::tick(1000 * 60 * 5, function () {
+            if ($this->memoryExceeded()) {
+                $this->exitMaster();
+            }
+        });
+
         // check queue status
         $handlers = $this->options['job_snapshot']['handler'] ?? [];
         if (!empty($handlers)) {
@@ -157,6 +156,8 @@ class Manager
      */
     public function listen(): void
     {
+        $this->queue->retryReserved();
+
         $this->workerDirector->start();
 
         \register_shutdown_function([$this, 'exitMaster']);
@@ -165,42 +166,7 @@ class Manager
 
         $this->registerSignal();
 
-        $this->queue->retryReserved();
-
-        $this->listening = true;
-
-        // required
-        Runtime::enableCoroutine();
-
-        Coroutine::create(function () {
-            $this->registerTimer();
-            while ($this->listening) {
-                try {
-                    [$id, $attempts, $job] = $this->queue->pop();
-                    if (!$id) {
-                        Coroutine::sleep($this->options['sleep_seconds'] ?? 1);
-                        continue;
-                    }
-                    if (null === $job) {
-                        throw new InvalidJobException('Job popped is null.');
-                    }
-                    $this->workerDirector->dispatch($id, $job);
-                } catch (\Throwable $t) {
-                    $this->logger->error('Job dispatch error, '.$t->getMessage(), [
-                        'driver' => \get_class($this->queue),
-                        'channel' => $this->queue->getChannel(),
-                        'message_id' => $id ?? null,
-                        'attempts' => $attempts ?? null,
-                    ]);
-                    !empty($id) && $this->queue->failed($id, $attempts ?? 0);
-                }
-
-                if ($this->memoryExceeded()) {
-                    $this->logger->info('Memory exceeded, force to exit.');
-                    $this->exitMaster();
-                }
-            }
-        });
+        $this->registerTimer();
     }
 
     /**
@@ -242,7 +208,6 @@ class Manager
     {
         Timer::clearAll();
         $this->workerDirector->stop();
-        $this->listening = false;
         @\unlink($this->getPidFile());
     }
 

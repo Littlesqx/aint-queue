@@ -95,7 +95,7 @@ LUA;
     }
 
     /**
-     * Get the Lua script for releasing reserved jobs with delay.
+     * Get the Lua script for failing specific job.
      *
      * KEYS[1] - The "failed" set we record jobs to, for example: queues:foo:failed
      * KEYS[2] - The queue the jobs are currently on, for example: queues:foo:reserved

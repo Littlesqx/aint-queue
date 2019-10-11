@@ -187,18 +187,6 @@ abstract class AbstractWorker implements WorkerInterface
     }
 
     /**
-     * Receive an task into current worker.
-     *
-     * @param int $messageId
-     *
-     * @throws \Throwable
-     */
-    public function receive($messageId): void
-    {
-        $this->queue->ready($messageId, $this->name);
-    }
-
-    /**
      * Execute job in current process.
      *
      * @param $messageId
@@ -235,7 +223,12 @@ abstract class AbstractWorker implements WorkerInterface
                 $delay = \max($job->getNextRetryTime($attempts) - \time(), 0);
                 $this->queue->release($id, $delay);
             } else {
-                $this->queue->failed($id, $attempts);
+                $payload = \json_encode([
+                    'last_error' => \get_class($t),
+                    'last_error_message' => $t->getMessage(),
+                    'attempts' => $attempts,
+                ]);
+                $this->queue->failed($id, $payload);
             }
             $this->logger->error(\get_class($t).': '.$t->getMessage(), [
                 'driver' => \get_class($this->queue),
@@ -293,7 +286,12 @@ abstract class AbstractWorker implements WorkerInterface
                 $delay = \max($job->getNextRetryTime($attempts) - \time(), 0);
                 $id && $this->queue->release($id, $delay);
             } else {
-                $id && $this->queue->failed($id);
+                $payload = \json_encode([
+                    'last_error' => \get_class($t),
+                    'last_error_message' => $t->getMessage(),
+                    'attempts' => $attempts,
+                ]);
+                $id && $this->queue->failed($id, $payload);
             }
             $this->logger->error(\get_class($t).': '.$t->getMessage(), [
                 'driver' => \get_class($this->queue),

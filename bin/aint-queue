@@ -22,6 +22,7 @@ use Littlesqx\AintQueue\Console\QueueStatusCommand;
 use Littlesqx\AintQueue\Console\QueueClearCommand;
 use Littlesqx\AintQueue\Console\QueueStopCommand;
 use Littlesqx\AintQueue\Console\QueueReloadCommand;
+use Littlesqx\AintQueue\Console\QueueReloadFailedCommand;
 
 $app = new Application();
 
@@ -32,6 +33,7 @@ $app->addCommands([
     new QueueClearCommand(),
     new QueueStopCommand(),
     new QueueReloadCommand(),
+    new QueueReloadFailedCommand(),
 ]);
 
 $app->run();

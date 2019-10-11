@@ -17,7 +17,6 @@ use Littlesqx\AintQueue\Exception\InvalidArgumentException;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\JobInterface;
 use Littlesqx\AintQueue\Serializer\Factory;
-use Littlesqx\AintQueue\WorkerDirector;
 use Predis\Client;
 
 class Queue extends AbstractQueue
@@ -155,7 +154,7 @@ class Queue extends AbstractQueue
 
         $this->releaseConnection($redis);
 
-        return $this->get($id);
+        return $id;
     }
 
     /**
@@ -340,72 +339,15 @@ class Queue extends AbstractQueue
 
         $waiting = $redis->llen("{$this->channelPrefix}{$this->getChannel()}:waiting");
 
-        [$waitingProcess, $waitingProcessPool, $waitingCo] = [
-            $redis->llen("{$this->channelPrefix}{$this->getChannel()}:ready:".WorkerDirector::WORKER_PROCESS),
-            $redis->llen("{$this->channelPrefix}{$this->getChannel()}:ready:".WorkerDirector::WORKER_PROCESS_POOL),
-            $redis->llen("{$this->channelPrefix}{$this->getChannel()}:ready:".WorkerDirector::WORKER_CO),
-        ];
-
         $delayed = $redis->zcount("{$this->channelPrefix}{$this->getChannel()}:delayed", '-inf', '+inf');
 
         $failed = $redis->hlen("{$this->channelPrefix}{$this->getChannel()}:failed");
 
         $this->releaseConnection($redis);
 
-        $done = $total - $waiting - $waitingProcess - $waitingProcessPool - $waitingCo - $delayed - $reserved - $failed;
+        $done = $total - $waiting - $delayed - $reserved - $failed;
 
-        return [[$waiting, $waitingProcess, $waitingProcessPool, $waitingCo], $reserved, $delayed, $done, $failed, $total];
-    }
-
-    /**
-     * Ready a job onto worker queue.
-     *
-     * @param int    $id
-     * @param string $worker
-     * @param bool   $ontoFront
-     *
-     * @throws RuntimeException
-     * @throws \Throwable
-     */
-    public function ready($id, string $worker, bool $ontoFront = false)
-    {
-        $redis = $this->getConnection();
-
-        $redis->eval(
-            LuaScripts::push(),
-            2,
-            "{$this->channelPrefix}{$this->getChannel()}:ready:{$worker}",
-            "{$this->channelPrefix}{$this->getChannel()}:reserved",
-            $id,
-            $ontoFront ? 1 : 0
-        );
-
-        $this->releaseConnection($redis);
-    }
-
-    /**
-     * @param string $worker
-     *
-     * @return int
-     *
-     * @throws RuntimeException
-     * @throws \Throwable
-     */
-    public function popReady(string $worker)
-    {
-        $redis = $this->getConnection();
-
-        $id = $redis->eval(
-            LuaScripts::pop(),
-            3,
-            "{$this->channelPrefix}{$this->getChannel()}:ready:{$worker}",
-            "{$this->channelPrefix}{$this->getChannel()}:reserved",
-            "{$this->channelPrefix}{$this->getChannel()}:attempts"
-        );
-
-        $this->releaseConnection($redis);
-
-        return $id;
+        return [$waiting, $reserved, $delayed, $done, $failed, $total];
     }
 
     /**
@@ -417,7 +359,7 @@ class Queue extends AbstractQueue
      * @throws RuntimeException
      * @throws \Throwable
      */
-    public function failed($id, $payload = null)
+    public function failed($id, string $payload = null)
     {
         $redis = $this->getConnection();
 
@@ -449,5 +391,67 @@ class Queue extends AbstractQueue
         }
 
         $this->releaseConnection($redis);
+    }
+
+    /**
+     * Get all failed jobs.
+     *
+     * @return array
+     *
+     * @throws \Throwable
+     */
+    public function getFailed(): array
+    {
+        $redis = $this->getConnection();
+
+        $failedJobs = $redis->hgetall("{$this->channelPrefix}{$this->getChannel()}:failed");
+
+        $this->releaseConnection($redis);
+
+        return $failedJobs;
+    }
+
+    /**
+     * Clear failed job.
+     *
+     * @param $id
+     *
+     * @return mixed
+     * @throws \Throwable
+     */
+    public function clearFailed($id)
+    {
+        $redis = $this->getConnection();
+
+        $redis->hdel("{$this->channelPrefix}{$this->getChannel()}:failed", $id);
+
+        $this->releaseConnection($redis);
+    }
+
+    /**
+     * Reload failed job.
+     *
+     * @param $id
+     * @param int $delay
+     *
+     * @return mixed
+     * @throws \Throwable
+     */
+    public function reloadFailed($id, int $delay = 0)
+    {
+        $redis = $this->getConnection();
+
+        $ret = $redis->eval(
+            LuaScripts::release(),
+            2,
+            "{$this->channelPrefix}{$this->getChannel()}:delayed",
+            "{$this->channelPrefix}{$this->getChannel()}:failed",
+            $id,
+            \time() + $delay
+        );
+
+        $this->releaseConnection($redis);
+
+        return $ret;
     }
 }

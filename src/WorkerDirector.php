@@ -30,14 +30,19 @@ class WorkerDirector
     protected $options;
 
     /**
-     * @var WorkerInterface[]
+     * @var string
      */
-    protected $workers = [];
+    protected $workerType;
 
     /**
-     * @var int[]
+     * @var WorkerInterface
      */
-    protected $workerPid = [];
+    protected $worker;
+
+    /**
+     * @var int
+     */
+    protected $workerPid;
 
     /**
      * @var bool
@@ -47,17 +52,17 @@ class WorkerDirector
     /**
      * @const string
      */
-    const WORKER_PROCESS = 'process-worker';
+    const WORKER_PROCESS = 'process';
 
     /**
      * @const string
      */
-    const WORKER_PROCESS_POOL = 'process-pool-worker';
+    const WORKER_PROCESS_POOL = 'process-pool';
 
     /**
      * @const string
      */
-    const WORKER_CO = 'co-worker';
+    const WORKER_CO = 'coroutine';
 
     /**
      * WorkerDirector constructor.
@@ -73,35 +78,24 @@ class WorkerDirector
 
         $this->registerSignal();
 
-        $this->workers[self::WORKER_PROCESS] = new ProcessWorker($queue, $logger, $options['process_worker'] ?? []);
-        $this->workers[self::WORKER_PROCESS_POOL] = new ProcessPoolWorker($queue, $logger, $options['process_pool_worker'] ?? []);
-        $this->workers[self::WORKER_CO] = new CoroutineWorker($queue, $logger, $options['coroutine_worker'] ?? []);
+        $this->workerType = $this->options['type'] ?? self::WORKER_PROCESS;
+
+        if (self::WORKER_PROCESS_POOL === $this->workerType) {
+            $this->worker = new ProcessPoolWorker($queue, $logger, $options);
+        } elseif (self::WORKER_CO === $this->workerType) {
+            $this->worker = new CoroutineWorker($queue, $logger, $options);
+        } else {
+            $this->worker = new ProcessWorker($queue, $logger, $options);
+        }
     }
 
     /**
      * @return ProcessWorker
      */
-    public function getProcessWorker(): ProcessWorker
+    public function getWorker(): WorkerInterface
     {
-        return $this->workers[self::WORKER_PROCESS];
+        return $this->worker;
     }
-
-    /**
-     * @return ProcessPoolWorker
-     */
-    public function getProcessPoolWorker(): ProcessPoolWorker
-    {
-        return $this->workers[self::WORKER_PROCESS_POOL];
-    }
-
-    /**
-     * @return CoroutineWorker
-     */
-    public function getCoroutineWorker(): CoroutineWorker
-    {
-        return $this->workers[self::WORKER_CO];
-    }
-
     /**
      * Register signal, reload worker when exit.
      */
@@ -110,15 +104,15 @@ class WorkerDirector
         Process::signal(SIGCHLD, function () {
             while ($ret = Process::wait(false)) {
                 $workerId = (int) $ret['pid'];
-                if ($workerId <= 0 || false === ($workerName = \array_search($workerId, $this->workerPid, true))) {
+                if ($workerId <= 0 || $workerId !== $this->workerPid) {
                     $this->logger->error(\sprintf('Invalid ret when SIGCHLD recv, worker not match: %s', \json_encode($ret)));
                     break;
                 }
-                $this->logger->info(\sprintf('Worker: %s - ret = %s, exit.', $workerName, \json_encode($ret)));
+                $this->logger->info(\sprintf('Worker: %s - ret = %s, exit.', $this->workerType, \json_encode($ret)));
 
                 if ($this->workerReloadAble) {
                     // restart worker...
-                    $this->workerPid[$workerName] = $this->workers[$workerName]->start();
+                    $this->workerPid = $this->worker->start();
                 }
             }
         });
@@ -131,36 +125,7 @@ class WorkerDirector
      */
     public function start(): void
     {
-        if ($this->options['process_worker']['enable'] ?? false) {
-            $this->workerPid[self::WORKER_PROCESS] = $this->getProcessWorker()->start();
-        }
-
-        if ($this->options['process_pool_worker']['enable'] ?? false) {
-            $this->workerPid[self::WORKER_PROCESS_POOL] = $this->getProcessPoolWorker()->start();
-        }
-
-        if ($this->options['coroutine_worker']['enable'] ?? false) {
-            $this->workerPid[self::WORKER_CO] = $this->getCoroutineWorker()->start();
-        }
-    }
-
-    /**
-     * Dispatch job to executor.
-     *
-     * @param $messageId
-     * @param $message
-     *
-     * @throws \Throwable
-     */
-    public function dispatch($messageId, $message): void
-    {
-        if ($message instanceof CoJobInterface) {
-            $this->getCoroutineWorker()->receive($messageId);
-        } elseif ($message instanceof AsyncJobInterface) {
-            $this->getProcessPoolWorker()->receive($messageId);
-        } else {
-            $this->getProcessWorker()->receive($messageId);
-        }
+        $this->worker->start();
     }
 
     /**
@@ -169,9 +134,7 @@ class WorkerDirector
     public function reload(): void
     {
         $this->workerReloadAble = true;
-        foreach ($this->workers as $worker) {
-            $worker->isRunning() && $worker->wait();
-        }
+        $this->worker->isRunning() && $this->worker->wait();
     }
 
     /**
@@ -180,8 +143,6 @@ class WorkerDirector
     public function stop(): void
     {
         $this->workerReloadAble = false;
-        foreach ($this->workers as $worker) {
-            $worker->isRunning() && $worker->stop();
-        }
+        $this->worker->isRunning() && $this->worker->stop();
     }
 }

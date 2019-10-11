@@ -59,15 +59,6 @@ interface QueueInterface
     public function pop();
 
     /**
-     * Pop a job message from ready-queue.
-     *
-     * @param string $worker
-     *
-     * @return mixed
-     */
-    public function popReady(string $worker);
-
-    /**
      * Remove specific job from current queue.
      *
      * @param $id
@@ -75,18 +66,6 @@ interface QueueInterface
      * @return mixed
      */
     public function remove($id);
-
-    /**
-     * Ready a job onto worker queue.
-     *
-     * @param $id
-     * @param string $worker
-     * @param bool   $ontoFront
-     *
-     * @throws RuntimeException
-     * @throws \Throwable
-     */
-    public function ready($id, string $worker, bool $ontoFront = false);
 
     /**
      * Release a job which was failed to execute.
@@ -105,7 +84,33 @@ interface QueueInterface
      * @throws RuntimeException
      * @throws \Throwable
      */
-    public function failed($id, $payload = null);
+    public function failed($id, string $payload = null);
+
+    /**
+     * Get all failed jobs.
+     *
+     * @return array
+     */
+    public function getFailed(): array;
+
+    /**
+     * Clear failed job.
+     *
+     * @param $id
+     *
+     * @return mixed
+     */
+    public function clearFailed($id);
+
+    /**
+     * Reload failed job.
+     *
+     * @param $id
+     * @param int $delay
+     *
+     * @return mixed
+     */
+    public function reloadFailed($id, int $delay = 0);
 
     /**
      * Clear current queue.

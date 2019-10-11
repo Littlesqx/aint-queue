@@ -20,13 +20,6 @@ interface WorkerInterface
     public function isRunning(): bool;
 
     /**
-     * Receive a task onto current worker.
-     *
-     * @param int $messageId
-     */
-    public function receive($messageId): void;
-
-    /**
      * Start current worker.
      *
      * @return int

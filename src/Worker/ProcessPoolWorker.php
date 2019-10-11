@@ -92,9 +92,9 @@ class ProcessPoolWorker extends AbstractWorker
         if ($this->options['dynamic_mode'] ?? false) {
             // check worker status, create or release workers
             Timer::tick(1000 * 60 * 5, function () {
-                [[$beforeDispatch, $process, $processPool, $co]] = $this->queue->status();
+                [$waiting] = $this->queue->status();
 
-                $healthWorkerNumber = max($this->minWorkerNum, min((int) ($processPool / 5), $this->maxWorkerNum));
+                $healthWorkerNumber = max($this->minWorkerNum, min((int) ($waiting / 5), $this->maxWorkerNum));
 
                 $differ = \count($this->pool) - $healthWorkerNumber;
 
@@ -203,15 +203,15 @@ class ProcessPoolWorker extends AbstractWorker
                 $this->queue->destroyConnection();
             });
             while ($this->working) {
-                $messageId = $this->queue->popReady($this->name);
+                $messageId = $this->queue->pop();
                 if (!$messageId) {
-                    Coroutine::sleep(1);
+                    Coroutine::sleep($this->options['sleep_seconds'] ?? 1);
                     continue;
                 }
                 // If current worker is stopped,
-                // the job popped will be push onto ready queue again.
+                // the job popped will be push onto waiting queue again.
                 if (!$this->working) {
-                    $this->queue->ready($messageId, $this->name, true);
+                    $this->queue->release($messageId);
                     break;
                 }
                 try {
