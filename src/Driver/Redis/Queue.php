@@ -417,6 +417,7 @@ class Queue extends AbstractQueue
      * @param $id
      *
      * @return mixed
+     *
      * @throws \Throwable
      */
     public function clearFailed($id)
@@ -435,6 +436,7 @@ class Queue extends AbstractQueue
      * @param int $delay
      *
      * @return mixed
+     *
      * @throws \Throwable
      */
     public function reloadFailed($id, int $delay = 0)

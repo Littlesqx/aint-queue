@@ -96,6 +96,7 @@ class WorkerDirector
     {
         return $this->worker;
     }
+
     /**
      * Register signal, reload worker when exit.
      */
