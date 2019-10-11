@@ -32,7 +32,7 @@ return [
             'handler' => [],
         ],
         'worker' => [
-            'type' => 'coroutine',  // One of process, process-pool, coroutine, if not provided, process will be set as default.
+            'type' => 'process-pool',  // One of process, process-pool, coroutine, if not provided, process will be set as default.
             'sleep_seconds' => 2,
             'memory_limit' => 96, // Mb
             'max_execute_seconds' => 10, // enable for process worker

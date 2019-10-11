@@ -64,7 +64,6 @@ class ProcessPoolWorker extends AbstractWorker
             $this->createWorker();
         }
 
-        swoole_async_set(['enable_coroutine' => false]);
         // register signal
         Process::signal(SIGCHLD, function () {
             while ($ret = Process::wait(false)) {
