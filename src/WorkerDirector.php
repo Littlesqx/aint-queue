@@ -90,7 +90,9 @@ class WorkerDirector
     }
 
     /**
-     * @return ProcessWorker
+     * Get current worker.
+     *
+     * @return WorkerInterface
      */
     public function getWorker(): WorkerInterface
     {
