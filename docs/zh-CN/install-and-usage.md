@@ -44,31 +44,19 @@ return [
         ],
         'pid_path' => '/var/run/aint-queue',
         'memory_limit' => 96, // Mb
-        'sleep_seconds' => 2,
         'job_snapshot' => [
             'interval' => 5 * 60,
-            'handler' => [
-
-            ]
+            'handler' => [],
         ],
         'worker' => [
-            'process_worker' => [
-                'enable' => true,
-                'memory_limit' => 96, // Mb
-                'max_execute_seconds' => 10,
-            ],
-            'process_pool_worker' => [
-                'enable' => true,
-                'dynamic_mode' => true,
-                'memory_limit' => 96, // Mb
-                'min_worker_number' => 5,
-                'max_worker_number' => 50,
-            ],
-            'coroutine_worker' => [
-                'enable' => true,
-                'memory_limit' => 96, // Mb
-                'max_coroutine' => 4096,
-            ],
+            'type' => 'process-pool',  // One of process, process-pool, coroutine, if not provided, process will be set as default.
+            'sleep_seconds' => 2,
+            'memory_limit' => 96, // Mb
+            'max_execute_seconds' => 10, // enable for process worker
+            'dynamic_mode' => true,      // enable for process-pool worker
+            'min_worker_number' => 5,    // enable for process-pool worker
+            'max_worker_number' => 50,   // enable for process-pool worker
+            'max_coroutine' => 4096,     // enable for coroutine worker
         ],
     ],
 ];
@@ -77,7 +65,7 @@ return [
 
 - channel
 
-  `aint-queue` 支持
+  `aint-queue` 支持多 channel 隔离，意味着可以开启多个消费进程对不同类型的消息的消费。
 
 - driver
 
@@ -85,12 +73,17 @@ return [
 
 - pid_path
 
-  这是用来存储监听进程的进程 id 文件目录，一般在 `/var/run/` 下，默认是 `/var/run/aint-queue`。 
+  这是用来存储主进程的进程 id 文件目录，一般在 `/var/run/` 下，默认是 `/var/run/aint-queue`。 
   
 - memory_limit
   
   由于 PHP 的先天劣势，程序写得不好的话可能会有缓慢的内存泄漏异常，可以设定一个最大值，程序达到后会自动退出，
   可以配合进程守护助手（例如 supervisor）达到自动重启。
+  
+- job_snapshot
+
+  任务快照，可以设置 interval 调整定时器的执行间隔，每次执行都会将当前的运行状态传递给 handler, handler 
+  需要实现 JobSnapshotHandlerInterface 接口。可以同过此机制达到队列的监控，比如当任务堆积过多，邮件通知开发者。、
   
 - sleep_seconds
 
@@ -98,12 +91,17 @@ return [
 
 - worker
 
-  - process_worker 是单进程消费模式（被消费的任务来源于闭包任务和实现了 `SyncJobInterface` 的类任务），该消费模式下，任务是一个接一个先后顺序执行的，
-    所以请保证单个任务的执行时长不会太久，可以再类定义中声明，或者被 `max_execute_seconds` 默认值覆盖，超出时长后任务将执行失败，抛出一个 `TimeoutException` 异常。
+  - type
+    
+    - type 允许设置消费者进程的运行模式，支持以下三种，每种模式有各自的特色，并且每一种模式下的消费进程都是支持协程的。
+
+        - process 是单进程消费模式（被消费的任务来源于闭包任务和实现了 `SyncJobInterface` 的类任务），该消费模式下，任务是一个接一个先后顺序执行的，
+          所以请保证单个任务的执行时长不会太久，可以再类定义中声明，或者被 `max_execute_seconds` 默认值覆盖，超出时长后任务将执行失败，抛出一个 `TimeoutException` 异常。
   
-  - process_pool_worker 是进程池消费模式（被消费的任务来源于实现了 `AsyncJobInterface` 的类任务），进程数可以通过 `worker_number` 配置，当某个子进程内存超出 `memory_limit`，子进程将在执行完本次任务后重启并继续工作。  
+        - process-pool 是进程池消费模式（被消费的任务来源于实现了 `AsyncJobInterface` 的类任务），进程数可以通过 `worker_number` 配置，当某个子进程内存超出 `memory_limit`，
+          子进程将在执行完本次任务后重启并继续工作。 dynamic_mode 设置为 true 时，进程池大小将是动态的（min_worker_number ~ max_worker_number），反之，设置为 false 则固定为 min_worker_number。
   
-  - coroutine_worker 是协程消费模式（被消费的任务来源于实现了 `CoJobInterface` 的类任务），会为每一个任务创建一个协程环境，开发者可以在任务中使用 `swoole` 提供的协程 api。
+        - coroutine 是协程消费模式（被消费的任务来源于实现了 `CoJobInterface` 的类任务），会为每一个任务创建一个协程环境。可以通过设置 max_coroutine 以限制当前进程的最大协程数。
   
   #### 使用
   
@@ -111,31 +109,32 @@ return [
   
   可以使用 `/vendor/bin/aint-queue` 命令：
   
-```bash
-  
-Usage:
-  command [options] [arguments]
+    ```bash
+    Console Tool
 
-Options:
-  -h, --help            Display this help message
-  -q, --quiet           Do not output any message
-  -V, --version         Display this application version
-      --ansi            Force ANSI output
-      --no-ansi         Disable ANSI output
-  -n, --no-interaction  Do not ask any interactive question
-  -v|vv|vvv, --verbose  Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug
+    Usage:
+    command [options] [arguments]
 
-Available commands:
-  help          Displays help for a command
-  list          Lists commands
- queue
-    queue:clear   Clear the queue.
-    queue:listen  Listen the queue.
-    queue:reload  Reload worker for the queue.
-    queue:run     Run a job pop from the queue.
-    queue:status  Get the execute status of specific queue.
-    queue:stop    Stop listening the queue.
-  
+    Options:
+      -h, --help            Display this help message
+      -q, --quiet           Do not output any message
+      -V, --version         Display this application version
+        --ansi            Force ANSI output
+        --no-ansi         Disable ANSI output
+      -n, --no-interaction  Do not ask any interactive question
+      -v|vv|vvv, --verbose  Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug
+
+    Available commands:
+      help                 Displays help for a command
+      list                 Lists commands
+      queue
+       queue:clear          Clear the queue.
+       queue:listen         Listen the queue.
+       queue:reload         Reload worker for the queue.
+       queue:reload-failed  Reload all the failed jobs onto the waiting queue.
+       queue:run            Run a job pop from the queue.
+       queue:status         Get the execute status of specific queue.
+       queue:stop           Stop listening the queue.
   ```
   
   - queue:clear，清空队列，请慎用。
@@ -159,12 +158,16 @@ Available commands:
   ┌─────────┬──────────┬─────────┬───────┬────────┬───────┐
   │ waiting │ reserved │ delayed │ done  │ failed │ total │
   ├─────────┼──────────┼─────────┼───────┼────────┼───────┤
-  │ 0/0/0/0 │ 0        │ 0       │ 26000 │ 0      │ 26000 │
+  │ 0       │ 0        │ 0       │ 26000 │ 0      │ 26000 │
   └─────────┴──────────┴─────────┴───────┴────────┴───────┘
   ```
   
   - queue-stop，退出监听进程
   
+  - queue-reload，重载工作进程
+
+  - queue:reload-failed，重载失败任务
+    
  ##### 任务入队
  
  > 请确保开启了对应的消费 worker
@@ -184,8 +187,7 @@ Available commands:
  );
  ```
  
- > 以下的 SyncJob, AsyncJob 和 CoJob 均可以自定义，他们分别实现了 SyncJobInterface, AsyncJobInterface 和 CoJobInterface。
- - 单进程消费的任务
+ > 以下的 SyncJob, AsyncJob 均可以自定义，他们分别实现了 SyncJobInterface, AsyncJobInterface。
  
  ```php
  <?php
@@ -196,35 +198,13 @@ Available commands:
  });
  
  // Class job
- $queue->push(new \Littlesqx\AintQueue\Example\SyncJob());
+ $queue->push(new SyncJob());
  
- ```
+ $queue->push(new AsyncJob());
  
- - 进程池消费的任务
- 
- ```php
- <?php
- 
- $queue->push(new \Littlesqx\AintQueue\Example\AsyncJob());
- 
- ```
- 
- - 协程消费的任务
- 
- ```php
- <?php
- 
- $queue->push(new \Littlesqx\AintQueue\Example\CoJob());
- 
- ```
- 
- - 延时任务
- 
- ```php
- <?php
- 
- $queue->delay(10)->push(function ($queue) {
+ $queue->push(function ($queue) {
      echo "I am a delayed job\n";
- });
+ }, 10);
+ 
  ```
   

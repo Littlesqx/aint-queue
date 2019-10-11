@@ -45,26 +45,20 @@ return [
             ],
         ],
         'pid_path' => '/var/run/aint-queue',
-        'memory_limit' => 512, // Mb
-        'sleep_seconds' => 3,
-        'warning_thresholds' => [
-            'warning_handler' => [],
-            'waiting_job_number' => 100,
-            'ready_job_number' => 100,
+        'memory_limit' => 96, // Mb
+        'job_snapshot' => [
+            'interval' => 5 * 60,
+            'handler' => [],
         ],
         'worker' => [
-            'process_worker' => [
-                'enable' => false,
-                'max_execute_seconds' => 0,
-            ],
-            'process_pool_worker' => [
-                'enable' => true,
-                'memory_limit' => 512, // Mb
-                'worker_number' => 4,
-            ],
-            'coroutine_worker' => [
-                'enable' => false,
-            ],
+            'type' => 'process-pool',  // One of process, process-pool, coroutine, if not provided, process will be set as default.
+            'sleep_seconds' => 2,
+            'memory_limit' => 96, // Mb
+            'max_execute_seconds' => 10, // enable for process worker
+            'dynamic_mode' => true,      // enable for process-pool worker
+            'min_worker_number' => 5,    // enable for process-pool worker
+            'max_worker_number' => 50,   // enable for process-pool worker
+            'max_coroutine' => 4096,     // enable for coroutine worker
         ],
     ],
 ];
@@ -88,15 +82,15 @@ $queue->push(function () {
 });
 
 // push a sync and delay job
-$queue->delay(10)->push(function () {
+$closureJob = function () {
     echo "Hello aint-queue delayed\n";
-});
+};
+$queue->push($closureJob, 5);
 
 // And class job are allowed.
-// 1. Create a class which implements JobInterface, you can see the example in `/src/Example`.
-// 2. Different instance will be consumed by corresponding consumers (single-process, process-pool and co-process).
-// 3. Noted that job pushed should be un-serialize by queue-listener, this means queue-pusher and queue-listener are required to in the same project.                                          
-// 4. You can see more examples in `example` directory.
+// 1. Create a class which implements JobInterface, you can see the example in `/example`.
+// 2. Noted that job pushed should be un-serialize by queue-listener, this means queue-pusher and queue-listener are required to in the same project.                                          
+// 3. You can see more examples in `example` directory.
 ```
 
 ### Manage listener
@@ -121,14 +115,16 @@ Options:
   -v|vv|vvv, --verbose  Increase the verbosity of messages: 1 for normal output, 2 for more verbose output and 3 for debug
 
 Available commands:
-  help          Displays help for a command
-  list          Lists commands
+  help                 Displays help for a command
+  list                 Lists commands
  queue
-  queue:clear   Clear the queue.
-  queue:listen  Listen the queue.
-  queue:run     Run a job pop from the queue.
-  queue:status  Get the execute status of specific queue.
-  queue:stop    Stop listening the queue.
+  queue:clear          Clear the queue.
+  queue:listen         Listen the queue.
+  queue:reload         Reload worker for the queue.
+  queue:reload-failed  Reload all the failed jobs onto the waiting queue.
+  queue:run            Run a job pop from the queue.
+  queue:status         Get the execute status of specific queue.
+  queue:stop           Stop listening the queue.
 ```
 
 ## Testing
