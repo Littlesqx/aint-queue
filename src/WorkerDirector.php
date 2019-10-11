@@ -111,10 +111,8 @@ class WorkerDirector
                 }
                 $this->logger->info(\sprintf('Worker: %s - ret = %s, exit.', $this->workerType, \json_encode($ret)));
 
-                if ($this->workerReloadAble) {
-                    // restart worker...
-                    $this->workerPid = $this->worker->start();
-                }
+                // restart worker...
+                $this->workerReloadAble && $this->start();
             }
         });
     }
@@ -126,7 +124,7 @@ class WorkerDirector
      */
     public function start(): void
     {
-        $this->worker->start();
+        $this->workerPid = $this->worker->start();
     }
 
     /**
