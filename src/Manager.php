@@ -155,6 +155,7 @@ class Manager
     public function listen(): void
     {
         @swoole_set_process_name(sprintf('aint-queue queue:listen master#%s for %s', getmypid(), $this->queue->getChannel()));
+
         $this->queue->retryReserved();
 
         $this->workerManager->start();
