@@ -99,6 +99,7 @@ class Worker
      */
     public function work()
     {
+        @swoole_set_process_name(sprintf('aint-queue queue:listen worker#%s for %s', getmypid(), $this->queue->getChannel()));
         $this->logger->info(sprintf('worker#%s for %s is started.', getmypid(), $this->queue->getChannel()));
 
         // required
