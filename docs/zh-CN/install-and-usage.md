@@ -49,14 +49,11 @@ return [
             'handler' => [],
         ],
         'worker' => [
-            'type' => 'process-pool',  // One of process, process-pool, coroutine, if not provided, process will be set as default.
             'sleep_seconds' => 2,
             'memory_limit' => 96, // Mb
-            'max_execute_seconds' => 10, // enable for process worker
-            'dynamic_mode' => true,      // enable for process-pool worker
-            'min_worker_number' => 5,    // enable for process-pool worker
-            'max_worker_number' => 50,   // enable for process-pool worker
-            'max_coroutine' => 4096,     // enable for coroutine worker
+            'dynamic_mode' => true,
+            'min_worker_number' => 5,
+            'max_worker_number' => 50,
         ],
     ],
 ];
@@ -91,17 +88,10 @@ return [
 
 - worker
 
-  - type
-    
-    - type 允许设置消费者进程的运行模式，支持以下三种，每种模式有各自的特色，并且每一种模式下的消费进程都是支持协程的。
-
-        - process 是单进程消费模式（被消费的任务来源于闭包任务和实现了 `SyncJobInterface` 的类任务），该消费模式下，任务是一个接一个先后顺序执行的，
-          所以请保证单个任务的执行时长不会太久，可以再类定义中声明，或者被 `max_execute_seconds` 默认值覆盖，超出时长后任务将执行失败，抛出一个 `TimeoutException` 异常。
-  
-        - process-pool 是进程池消费模式（被消费的任务来源于实现了 `AsyncJobInterface` 的类任务），进程数可以通过 `worker_number` 配置，当某个子进程内存超出 `memory_limit`，
-          子进程将在执行完本次任务后重启并继续工作。 dynamic_mode 设置为 true 时，进程池大小将是动态的（min_worker_number ~ max_worker_number），反之，设置为 false 则固定为 min_worker_number。
-  
-        - coroutine 是协程消费模式（被消费的任务来源于实现了 `CoJobInterface` 的类任务），会为每一个任务创建一个协程环境。可以通过设置 max_coroutine 以限制当前进程的最大协程数。
+  - 工作进程数可以通过 `worker_number` 配置，当某个子进程内存超出 `memory_limit`，
+    子进程将在执行完本次任务后重启并继续工作。 dynamic_mode 设置为 true 时，进程池大小将是动态的（min_worker_number ~ max_worker_number），
+    反之，设置为 false 则固定为 min_worker_number。
+  - 可以在工作进程使用 swoole 协程 api，应该确保执行任务的方法体返回时，子协程已经结束。  
   
   #### 使用
   
@@ -187,22 +177,21 @@ return [
  );
  ```
  
- > 以下的 SyncJob, AsyncJob 均可以自定义，他们分别实现了 SyncJobInterface, AsyncJobInterface。
+ > 以下的 Job 可以自定义，它实现了 JobInterface。
  
  ```php
  <?php
  
  // Closure job
- $queue->push(function ($queue) {
+ $queue->push(function () {
      echo "I am a job\n";
  });
  
  // Class job
- $queue->push(new SyncJob());
+ $queue->push(new Job());
  
- $queue->push(new AsyncJob());
  
- $queue->push(function ($queue) {
+ $queue->push(function () {
      echo "I am a delayed job\n";
  }, 10);
  

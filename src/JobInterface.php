@@ -15,11 +15,9 @@ interface JobInterface
     /**
      * Execute current job.
      *
-     * @param QueueInterface $queue
-     *
      * @return mixed
      */
-    public function handle(QueueInterface $queue);
+    public function handle();
 
     /**
      * Determine whether current job can retry if fail.

@@ -12,7 +12,6 @@ namespace Littlesqx\AintQueue;
 
 use Littlesqx\AintQueue\Driver\Redis\Queue;
 use Littlesqx\AintQueue\Exception\RuntimeException;
-use Littlesqx\AintQueue\Helper\EnvironmentHelper;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
 use Psr\Log\LoggerInterface;
 use Swoole\Process;
@@ -26,7 +25,7 @@ class Manager
     protected $logger;
 
     /**
-     * @var QueueInterface|AbstractQueue|Queue
+     * @var QueueInterface
      */
     protected $queue;
 
@@ -36,17 +35,16 @@ class Manager
     protected $options;
 
     /**
-     * @var WorkerDirector
+     * @var WorkerManager
      */
-    protected $workerDirector;
+    protected $workerManager;
 
     public function __construct(QueueInterface $driver, array $options = [])
     {
         $this->queue = $driver;
         $this->options = $options;
-
         $this->logger = new DefaultLogger();
-        $this->workerDirector = new WorkerDirector($this->queue, $this->logger, $options['worker'] ?? []);
+        $this->workerManager = new WorkerManager($this->queue, $this->logger, $options['worker'] ?? []);
     }
 
     /**
@@ -82,12 +80,12 @@ class Manager
     {
         // force exit
         Process::signal(SIGTERM, function () {
-            $this->workerDirector->stop();
+            $this->workerManager->stop();
             $this->exitMaster();
         });
         // custom signal - reload workers
         Process::signal(SIGUSR1, function () {
-            $this->workerDirector->reload();
+            $this->workerManager->reload();
         });
     }
 
@@ -132,11 +130,11 @@ class Manager
     }
 
     /**
-     * @return WorkerDirector
+     * @return WorkerManager
      */
-    public function getWorkerDirector(): WorkerDirector
+    public function getWorkerManager(): WorkerManager
     {
-        return $this->workerDirector;
+        return $this->workerManager;
     }
 
     /**
@@ -158,15 +156,15 @@ class Manager
     {
         $this->queue->retryReserved();
 
-        $this->workerDirector->start();
-
-        \register_shutdown_function([$this, 'exitMaster']);
+        $this->workerManager->start();
 
         $this->setupPidFile();
 
         $this->registerSignal();
 
         $this->registerTimer();
+
+        \register_shutdown_function([$this, 'exitMaster']);
     }
 
     /**
@@ -176,7 +174,7 @@ class Manager
      */
     public function memoryExceeded(): bool
     {
-        $usage = EnvironmentHelper::getCurrentMemoryUsage();
+        $usage = memory_get_usage(true) / 1024 / 1024;
 
         return $usage >= $this->getMemoryLimit();
     }
@@ -207,7 +205,7 @@ class Manager
     public function exitMaster(): void
     {
         Timer::clearAll();
-        $this->workerDirector->stop();
+        $this->workerManager->stop();
         @\unlink($this->getPidFile());
     }
 

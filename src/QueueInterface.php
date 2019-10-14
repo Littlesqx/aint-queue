@@ -46,7 +46,7 @@ interface QueueInterface
      * Push an executable job message into queue.
      *
      * @param \Closure|JobInterface $message
-     * @param int $delay
+     * @param int                   $delay
      *
      * @return mixed
      */
@@ -164,4 +164,16 @@ interface QueueInterface
      * @return bool
      */
     public function isFailed(int $id): bool;
+
+    /**
+     * Retry reserved job (only called when listener restart.).
+     *
+     * @throws \Throwable
+     */
+    public function retryReserved(): void;
+
+    /**
+     * Moved the expired job to waiting queue.
+     */
+    public function migrateExpired(): void;
 }

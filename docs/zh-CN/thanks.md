@@ -13,6 +13,5 @@
 - monolog/monolog
 - predis/predis
 - symfony/console
-- symfony/process
 - phpunit/phpunit
 - jeremeamia/superclosure

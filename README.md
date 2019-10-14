@@ -51,14 +51,11 @@ return [
             'handler' => [],
         ],
         'worker' => [
-            'type' => 'process-pool',  // One of process, process-pool, coroutine, if not provided, process will be set as default.
             'sleep_seconds' => 2,
             'memory_limit' => 96, // Mb
-            'max_execute_seconds' => 10, // enable for process worker
-            'dynamic_mode' => true,      // enable for process-pool worker
-            'min_worker_number' => 5,    // enable for process-pool worker
-            'max_worker_number' => 50,   // enable for process-pool worker
-            'max_coroutine' => 4096,     // enable for coroutine worker
+            'dynamic_mode' => true, 
+            'min_worker_number' => 5,
+            'max_worker_number' => 50,
         ],
     ],
 ];

@@ -92,7 +92,7 @@ class Queue extends AbstractQueue
      * Push an executable job message into queue.
      *
      * @param \Closure|JobInterface $message
-     * @param int $delay
+     * @param int                   $delay
      *
      * @return mixed
      *
@@ -382,7 +382,7 @@ class Queue extends AbstractQueue
      * @throws RuntimeException
      * @throws \Throwable
      */
-    public function retryReserved()
+    public function retryReserved(): void
     {
         $redis = $this->getConnection();
 
