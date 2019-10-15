@@ -187,6 +187,12 @@ class WorkerManager
      */
     protected function flexWorkers(): void
     {
+        $isDynamic = $this->options['dynamic_mode'] ?? false;
+
+        if (!$isDynamic) {
+            return;
+        }
+
         [$waiting] = $this->queue->status();
 
         $healthWorkerNumber = max($this->minConsumerNum, min((int) ($waiting / 5), $this->maxConsumerNum));
