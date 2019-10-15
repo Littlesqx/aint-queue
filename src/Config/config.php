@@ -26,17 +26,20 @@ return [
             ],
         ],
         'pid_path' => '/var/run/aint-queue',
-        'memory_limit' => 96, // Mb
-        'job_snapshot' => [
-            'interval' => 5 * 60,
-            'handler' => [],
-        ],
         'worker' => [
-            'sleep_seconds' => 2,
-            'memory_limit' => 96, // Mb
-            'dynamic_mode' => true,
-            'min_worker_number' => 5,
-            'max_worker_number' => 50,
+            'consumer' => [
+                'sleep_seconds' => 2,
+                'memory_limit' => 96, // Mb
+                'dynamic_mode' => true,
+                'min_worker_number' => 5,
+                'max_worker_number' => 10,
+            ],
+            'monitor' => [
+                'job_snapshot' => [
+                    'interval' => 5 * 60,
+                    'handler' => [],
+                ],
+            ]
         ],
     ],
 ];

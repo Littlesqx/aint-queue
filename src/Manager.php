@@ -15,7 +15,6 @@ use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
 use Psr\Log\LoggerInterface;
 use Swoole\Process;
-use Swoole\Timer;
 
 class Manager
 {
@@ -39,26 +38,20 @@ class Manager
      */
     protected $workerManager;
 
+    /**
+     * @var int
+     */
+    protected $masterPid;
+
     public function __construct(QueueInterface $driver, array $options = [])
     {
         $this->queue = $driver;
         $this->options = $options;
+
+        $this->masterPid = getmypid();
+
         $this->logger = new DefaultLogger();
         $this->workerManager = new WorkerManager($this->queue, $this->logger, $options['worker'] ?? []);
-    }
-
-    /**
-     * Setup pidFile.
-     *
-     * @throws RuntimeException
-     */
-    protected function setupPidFile(): void
-    {
-        $pidFile = $this->getPidFile();
-        if ($this->isRunning()) {
-            throw new RuntimeException("Listener for queue:{$this->queue->getChannel()} is running!");
-        }
-        @\file_put_contents($pidFile, \getmypid());
     }
 
     /**
@@ -74,45 +67,28 @@ class Manager
     }
 
     /**
-     * Register signal handler.
+     * Whether current channel's master is running.
+     *
+     * @return bool
      */
-    protected function registerSignal(): void
+    public function isRunning(): bool
     {
-        // force exit
-        Process::signal(SIGTERM, function () {
-            $this->workerManager->stop();
-            $this->exitMaster();
-        });
-        // custom signal - reload workers
-        Process::signal(SIGUSR1, function () {
-            $this->workerManager->reload();
-        });
+        $pidFile = $this->getPidFile();
+        if (file_exists($pidFile)) {
+            $pid = (int) file_get_contents($pidFile);
+
+            return Process::kill($pid, 0);
+        }
+
+        return false;
     }
 
     /**
-     * Register timer-process.
+     * @return array
      */
-    protected function registerTimer(): void
+    public function getOptions(): array
     {
-        // move expired job
-        Timer::tick(1000, function () {
-            $this->queue->migrateExpired();
-        });
-
-        Timer::tick(1000 * 60 * 5, function () {
-            if ($this->memoryExceeded()) {
-                $this->exitMaster();
-            }
-        });
-
-        // check queue status
-        $handlers = $this->options['job_snapshot']['handler'] ?? [];
-        if (!empty($handlers)) {
-            $interval = (int) $this->options['job_snapshot']['interval'] ?? 60 * 5;
-            Timer::tick(1000 * $interval, function () {
-                $this->checkQueueStatus();
-            });
-        }
+        return $this->options ?? [];
     }
 
     /**
@@ -148,13 +124,56 @@ class Manager
     }
 
     /**
+     * Setup pidFile.
+     *
+     * @throws RuntimeException
+     */
+    protected function setupPidFile(): void
+    {
+        $pidFile = $this->getPidFile();
+        if ($this->isRunning()) {
+            throw new RuntimeException("Listener for queue:{$this->queue->getChannel()} is running!");
+        }
+        @file_put_contents($pidFile, getmypid());
+    }
+
+    /**
+     * Remove pidFile.
+     */
+    protected function removePidFile(): void
+    {
+        @unlink($this->getPidFile());
+    }
+
+    /**
+     * Register signal handler.
+     */
+    protected function registerSignal(): void
+    {
+        // force exit
+        Process::signal(SIGTERM, function () {
+            $this->workerManager->stop();
+            $this->exitMaster();
+        });
+        // custom signal - reload workers
+        Process::signal(SIGUSR1, function () {
+            $this->workerManager->reload();
+        });
+
+        // custom signal - reserve (a signal)
+        Process::signal(SIGUSR2, function () {
+
+        });
+    }
+
+    /**
      * Listen the queue, to distribute job.
      *
      * @throws \Throwable
      */
     public function listen(): void
     {
-        @swoole_set_process_name(sprintf('aint-queue queue:listen master#%s for %s', getmypid(), $this->queue->getChannel()));
+        @swoole_set_process_name(sprintf('aint-queue-master for %s', $this->queue->getChannel()));
 
         $this->queue->retryReserved();
 
@@ -164,41 +183,7 @@ class Manager
 
         $this->registerSignal();
 
-        $this->registerTimer();
-
-        \register_shutdown_function([$this, 'exitMaster']);
-    }
-
-    /**
-     * Whether memory exceeded or not.
-     *
-     * @return bool
-     */
-    public function memoryExceeded(): bool
-    {
-        $usage = memory_get_usage(true) / 1024 / 1024;
-
-        return $usage >= $this->getMemoryLimit();
-    }
-
-    /**
-     * Get manager's memory limit.
-     *
-     * @return float
-     */
-    public function getMemoryLimit(): float
-    {
-        return (float) ($this->options['memory_limit'] ?? 1024);
-    }
-
-    /**
-     * Get sleep time(s) after every pop.
-     *
-     * @return int
-     */
-    public function getSleepTime(): int
-    {
-        return (int) \max($this->options['sleep_seconds'] ?? 0, 0);
+        register_shutdown_function([$this, 'exitMaster']);
     }
 
     /**
@@ -206,64 +191,7 @@ class Manager
      */
     public function exitMaster(): void
     {
-        Timer::clearAll();
         $this->workerManager->stop();
-        @\unlink($this->getPidFile());
-    }
-
-    /**
-     * @return array
-     */
-    public function getOptions(): array
-    {
-        return $this->options ?? [];
-    }
-
-    /**
-     * Whether current channel's master is running.
-     *
-     * @return bool
-     */
-    public function isRunning(): bool
-    {
-        $pidFile = $this->getPidFile();
-        if (\file_exists($pidFile)) {
-            $pid = (int) \file_get_contents($pidFile);
-
-            return Process::kill($pid, 0);
-        }
-
-        return false;
-    }
-
-    /**
-     * Check current queue's running status.
-     */
-    protected function checkQueueStatus()
-    {
-        try {
-            [$waiting, $reserved, $delayed, $done, $failed, $total] = $this->queue->status();
-            $snapshot = compact('waiting', 'reserved', 'delayed', 'done', 'failed', 'total');
-            $handlers = $this->options['job_snapshot']['handler'] ?? [];
-            foreach ($handlers as $handler) {
-                if (!\is_string($handler) || !\class_exists($handler)) {
-                    $this->logger->warning('Invalid JobSnapshotHandler or class not exists.');
-                    continue;
-                }
-                $handler = new $handler();
-                if (!$handler instanceof JobSnapshotHandlerInterface) {
-                    $this->logger->warning('JobSnapshotHandler must implement JobSnapshotHandlerInterface.');
-                    continue;
-                }
-                $handler->handle($snapshot);
-            }
-        } catch (\Throwable $t) {
-            $this->logger->error('Error when exec JobSnapshotHandler, '.$t->getMessage(), [
-                'driver' => \get_class($this->queue),
-                'channel' => $this->queue->getChannel(),
-            ]);
-
-            return;
-        }
+        $this->removePidFile();
     }
 }

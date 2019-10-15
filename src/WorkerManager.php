@@ -10,9 +10,12 @@
 
 namespace Littlesqx\AintQueue;
 
+use Littlesqx\AintQueue\Worker\ConsumerWorker;
+use Littlesqx\AintQueue\Worker\MonitorWorker;
+use Littlesqx\AintQueue\Worker\PipeMessage;
 use Psr\Log\LoggerInterface;
+use Swoole\Event;
 use Swoole\Process;
-use Swoole\Timer;
 
 class WorkerManager
 {
@@ -32,24 +35,24 @@ class WorkerManager
     protected $options;
 
     /**
-     * @var Worker[]
+     * @var ConsumerWorker[]
      */
-    protected $workers = [];
+    protected $consumers = [];
+
+    /**
+     * @var MonitorWorker[]
+     */
+    protected $monitor = [];
 
     /**
      * @var int
      */
-    protected $maxWorkerNum;
+    protected $maxConsumerNum;
 
     /**
      * @var int
      */
-    protected $minWorkerNum;
-
-    /**
-     * @var int
-     */
-    protected $workerCheckerTimer = 0;
+    protected $minConsumerNum;
 
     /**
      * WorkerManager constructor.
@@ -70,43 +73,35 @@ class WorkerManager
      */
     public function start(): void
     {
-        // init
-        $this->maxWorkerNum = $this->options['max_worker_number'] ?? 50;
-        $this->minWorkerNum = $this->options['min_worker_number'] ?? 4;
-        for ($i = 0; $i < $this->minWorkerNum; ++$i) {
-            $this->createWorker();
+        // init monitor
+        $this->createMonitor();
+
+        // init consumer
+        $this->maxConsumerNum = $this->options['consumer']['max_worker_number'] ?? 50;
+        $this->minConsumerNum = $this->options['consumer']['min_worker_number'] ?? 4;
+        for ($i = 0; $i < $this->minConsumerNum; ++$i) {
+            $this->createConsumer();
         }
 
         // register signal
         Process::signal(SIGCHLD, function () {
             while ($ret = Process::wait(false)) {
                 $pid = $ret['pid'] ?? -1;
-                $reload = 1 !== (int) ($ret['code'] ?? 0);
-                if (isset($this->workers[$pid])) {
+                if (isset($this->consumers[$pid])) {
+                    $reload = 1 !== (int) ($ret['code'] ?? 0);
                     $this->logger->info("worker#{$pid} for {$this->queue->getChannel()} is stopped.");
-                    unset($this->workers[$pid]);
-                    $reload && $this->createWorker();
+                    unset($this->consumers[$pid]);
+                    $reload && $this->createConsumer();
+                } elseif (isset($this->monitor[$pid])) {
+                    $this->logger->info("monitor#{$pid} for {$this->queue->getChannel()} is stopped.");
+                    Event::del($this->monitor[$pid]->getProcess()->pipe);
+                    unset($this->monitor[$pid]);
+                    $this->createMonitor();
+                } else {
+                    $this->logger->info('Invalid pid, can not match worker, ret = ' . json_encode($ret));
                 }
             }
         });
-
-        if ($this->options['dynamic_mode'] ?? false) {
-            // check worker status, create or release workers
-            $this->workerCheckerTimer = Timer::tick(1000 * 60 * 5, function () {
-                [$waiting] = $this->queue->status();
-
-                $healthWorkerNumber = max($this->minWorkerNum, min((int) ($waiting / 5), $this->maxWorkerNum));
-
-                $differ = count($this->workers) - $healthWorkerNumber;
-
-                while (0 !== $differ) {
-                    // create more workers
-                    $differ < 0 && $this->createWorker() && $differ++;
-                    // release idle workers
-                    $differ > 0 && $this->releaseWorker() && $differ--;
-                }
-            });
-        }
     }
 
     /**
@@ -114,7 +109,9 @@ class WorkerManager
      */
     public function reload(): void
     {
-        $this->refreshWorkers();
+        foreach (array_merge($this->monitor, $this->consumers) as $pid => $worker) {
+            Process::kill($pid, 0) && Process::kill($pid, SIGUSR1);
+        }
     }
 
     /**
@@ -122,26 +119,47 @@ class WorkerManager
      */
     public function stop(): void
     {
-        if ($this->workerCheckerTimer > 0) {
-            Timer::clear($this->workerCheckerTimer);
+        foreach (array_merge($this->monitor, $this->consumers) as $pid => $worker) {
+            Process::kill($pid, 0) && Process::kill($pid, SIGTERM);
         }
-        $this->destroyWorkers();
     }
 
     /**
-     * Create a worker.
+     * Create monitor worker.
+     */
+    protected function createMonitor(): void
+    {
+        $monitorWorker = new MonitorWorker($this->queue, $this->logger, $this->options);
+        $pid = $monitorWorker->start();
+        $this->monitor[$pid] = $monitorWorker;
+        Event::add($monitorWorker->getProcess()->pipe, function () use ($monitorWorker) {
+            $message = $monitorWorker->getProcess()->read(64 * 1024);
+            $pipeMessage = new PipeMessage($message);
+            if ($pipeMessage->type() === PipeMessage::MESSAGE_TYPE_CONSUMER_FLEX) {
+                $this->logger->info(sprintf(
+                    'Received message from monitor, type = %s, payload = %s',
+                    'MESSAGE_TYPE_CONSUMER_FLEX',
+                    json_encode($pipeMessage->payload())
+                ));
+                $this->flexWorkers();
+            }
+        });
+    }
+
+    /**
+     * Create a consumer worker.
      *
      * @return bool
      */
-    protected function createWorker(): bool
+    protected function createConsumer(): bool
     {
-        if (count($this->workers) >= $this->maxWorkerNum) {
+        if (count($this->consumers) >= $this->maxConsumerNum) {
             return false;
         }
 
-        $worker = new Worker($this->queue, $this->logger, $this->options);
-        $pid = $worker->start();
-        $this->workers[$pid] = $worker;
+        $consumerWorker = new ConsumerWorker($this->queue, $this->logger, $this->options['consumer'] ?? []);
+        $pid = $consumerWorker->start();
+        $this->consumers[$pid] = $consumerWorker;
 
         return true;
     }
@@ -151,36 +169,35 @@ class WorkerManager
      *
      * @return bool
      */
-    protected function releaseWorker(): bool
+    protected function releaseConsumer(): bool
     {
-        $minWorker = $this->options['min_worker_number'] ?? 4;
-        if (count($this->workers) <= $minWorker) {
+        $minWorker = $this->options['consumer']['min_worker_number'] ?? 4;
+        if (count($this->consumers) <= $minWorker) {
             return false;
         }
 
-        $selectedPid = array_rand($this->workers);
+        $selectedPid = array_rand($this->consumers);
         Process::kill($selectedPid, 0) && Process::kill($selectedPid, SIGUSR2);
 
         return true;
     }
 
     /**
-     * Exit worker after exec current job.
+     * Flex workers' number.
      */
-    protected function refreshWorkers(): void
+    protected function flexWorkers(): void
     {
-        foreach ($this->workers as $pid => $worker) {
-            Process::kill($pid, 0) && Process::kill($pid, SIGUSR1);
-        }
-    }
+        [$waiting] = $this->queue->status();
 
-    /**
-     * Force to exit worker.
-     */
-    protected function destroyWorkers(): void
-    {
-        foreach ($this->workers as $pid => $worker) {
-            Process::kill($pid, 0) && Process::kill($pid, SIGTERM);
+        $healthWorkerNumber = max($this->minConsumerNum, min((int) ($waiting / 5), $this->maxConsumerNum));
+
+        $differ = count($this->consumers) - $healthWorkerNumber;
+
+        while (0 !== $differ) {
+            // create more workers
+            $differ < 0 && $this->createConsumer() && $differ++;
+            // release idle workers
+            $differ > 0 && $this->releaseConsumer() && $differ--;
         }
     }
 }

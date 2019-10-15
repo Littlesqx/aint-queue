@@ -1,121 +1,30 @@
 <?php
 
-/*
- * This file is part of the littlesqx/aint-queue.
+/**
+ * This file is part of aint-queue.
  *
- * (c) littlesqx <littlesqx@gmail.com>
+ * Copyright © 2012 - 2019 Xiaoman. All Rights Reserved.
  *
- * This source file is subject to the MIT license that is bundled.
+ * Created by Shengqian <shengqian@xiaoman.cn>, on 2019/10/15.
  */
 
-namespace Littlesqx\AintQueue;
+namespace Littlesqx\AintQueue\Worker;
 
 use Littlesqx\AintQueue\Exception\InvalidJobException;
-use Psr\Log\LoggerInterface;
+use Littlesqx\AintQueue\JobInterface;
 use Swoole\Coroutine;
-use Swoole\Process;
-use Swoole\Runtime;
-use Swoole\Timer;
 
-class Worker
+class ConsumerWorker extends AbstractWorker
 {
-    /**
-     * @var QueueInterface
-     */
-    protected $queue;
-
-    /**
-     * @var LoggerInterface
-     */
-    protected $logger;
-
-    /**
-     * @var array
-     */
-    protected $options = [];
-
-    /**
-     * @var Process
-     */
-    protected $process;
-
-    /**
-     * @var int
-     */
-    protected $pid;
-
-    /**
-     * @var bool
-     */
-    protected $redirectStdinStdout = false;
-
-    /**
-     * @var int
-     */
-    protected $pipeType = 2;
-
-    /**
-     * @var bool
-     */
-    protected $enableCoroutine = true;
-
-    /**
-     * @var bool
-     */
-    protected $working = true;
-
-    /**
-     * @var bool
-     */
-    protected $workerReloadAble = true;
-
-    /**
-     * Worker constructor.
-     *
-     * @param QueueInterface  $queue
-     * @param LoggerInterface $logger
-     * @param array           $options
-     */
-    public function __construct(QueueInterface $queue, LoggerInterface $logger, array $options = [])
-    {
-        $this->queue = $queue;
-        $this->logger = $logger;
-        $this->options = $options;
-        $this->process = new Process([$this, 'work'], $this->redirectStdinStdout, $this->pipeType, $this->enableCoroutine);
-    }
-
-    /**
-     * @return int
-     */
-    public function start(): int
-    {
-        $this->pid = $this->process->start();
-
-        return $this->pid;
-    }
-
     /**
      * Working for handle job in loop.
      */
-    public function work()
+    public function work(): void
     {
-        @swoole_set_process_name(sprintf('aint-queue queue:listen worker#%s for %s', getmypid(), $this->queue->getChannel()));
-        $this->logger->info(sprintf('worker#%s for %s is started.', getmypid(), $this->queue->getChannel()));
+        @swoole_set_process_name(sprintf('aint-queue-consumer#%s for %s', getmypid(), $this->queue->getChannel()));
+        $this->logger->info(sprintf('consumer#%s for %s is started.', getmypid(), $this->queue->getChannel()));
 
-        // required
-        Runtime::enableCoroutine();
-        // reset connection
-        $this->queue->resetConnection();
-
-        // register signal
-        Process::signal(SIGUSR1, function () {
-            $this->working = false;
-            $this->workerReloadAble = true;
-        });
-        Process::signal(SIGUSR2, function () {
-            $this->working = false;
-            $this->workerReloadAble = false;
-        });
+        $this->init();
 
         Coroutine::create(function () {
             Coroutine::defer(function () {
@@ -149,7 +58,7 @@ class Worker
                 $limit = $this->options['memory_limit'] ?? 96;
                 $used = memory_get_usage(true) / 1024 / 1024;
                 if ($limit <= $used) {
-                    $this->logger->info("Memory exceeded, worker:#{$this->pid} will be reloaded later.");
+                    $this->logger->info("Memory exceeded, consumer#{$this->pid} will be reloaded later.");
                     $this->working = false;
                     $this->workerReloadAble = true;
                 }
@@ -165,7 +74,6 @@ class Worker
      *
      * @param $messageId
      *
-     * @throws Exception\RuntimeException
      * @throws \Throwable
      */
     protected function handle($messageId): void
@@ -182,7 +90,6 @@ class Worker
             is_callable($job) ? $job() : $job->handle();
             $this->queue->remove($id);
         } catch (\Throwable $t) {
-            !empty($timer) && Timer::clear($timer);
             if ($job instanceof JobInterface && $job->canRetry($attempts, $t)) {
                 $delay = max($job->getNextRetryTime($attempts) - time(), 0);
                 $this->queue->release($id, $delay);
