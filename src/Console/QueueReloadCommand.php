@@ -39,7 +39,7 @@ class QueueReloadCommand extends AbstractCommand
         $io = new SymfonyStyle($input, $output);
 
         if ($io->confirm("Are you sure to reload the worker for $channel-queue?", false)) {
-            $pid = (int) \file_get_contents($this->manager->getPidFile());
+            $pid = (int) file_get_contents($this->manager->getPidFile());
             Process::kill($pid, SIGUSR1);
             $io->writeln('Success to reload!');
         }

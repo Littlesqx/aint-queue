@@ -25,6 +25,15 @@ class MonitorWorker extends AbstractWorker
 
         $this->init();
 
+        Timer::tick(1000 * 2, function () {
+            if (!$this->working) {
+                Timer::clearAll();
+            }
+            if (!$this->workerReloadAble) {
+                $this->process->exit(1);
+            }
+        });
+
         // move expired job
         $moveExpiredInterval = (int) ($this->options['job']['move_expired_interval'] ?? 2);
         Timer::tick(1000 * $moveExpiredInterval, function () {

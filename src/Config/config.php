@@ -32,7 +32,7 @@ return [
                 'memory_limit' => 96, // Mb
                 'dynamic_mode' => true,
                 'min_worker_number' => 5,
-                'max_worker_number' => 10,
+                'max_worker_number' => 30,
             ],
             'monitor' => [
                 'job_snapshot' => [

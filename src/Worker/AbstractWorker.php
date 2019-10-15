@@ -10,8 +10,8 @@
 
 namespace Littlesqx\AintQueue\Worker;
 
+use Littlesqx\AintQueue\Logger\LoggerInterface;
 use Littlesqx\AintQueue\QueueInterface;
-use Psr\Log\LoggerInterface;
 use Swoole\Process;
 use Swoole\Runtime;
 
@@ -101,6 +101,7 @@ abstract class AbstractWorker
         Runtime::enableCoroutine();
         // reset connection
         $this->queue->resetConnection();
+        $this->logger->resetConnection();
 
         // register signal
         Process::signal(SIGUSR1, function () {

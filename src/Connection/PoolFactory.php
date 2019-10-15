@@ -26,14 +26,14 @@ class PoolFactory
      */
     public static function make(string $poolClass, array $options): PoolInterface
     {
-        if (!\class_exists($poolClass)) {
-            throw new InvalidArgumentException(\sprintf('[Error] class %s not exists.', $poolClass));
+        if (!class_exists($poolClass)) {
+            throw new InvalidArgumentException(sprintf('[Error] class %s not exists.', $poolClass));
         }
 
         $pool = new $poolClass($options);
 
         if (!$pool instanceof PoolInterface) {
-            throw new InvalidArgumentException(\sprintf('[Error] class %s is not instanceof %s', $poolClass, PoolInterface::class));
+            throw new InvalidArgumentException(sprintf('[Error] class %s is not instanceof %s', $poolClass, PoolInterface::class));
         }
 
         return $pool;

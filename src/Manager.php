@@ -13,7 +13,7 @@ namespace Littlesqx\AintQueue;
 use Littlesqx\AintQueue\Driver\Redis\Queue;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
-use Psr\Log\LoggerInterface;
+use Littlesqx\AintQueue\Logger\LoggerInterface;
 use Swoole\Process;
 
 class Manager
@@ -166,13 +166,13 @@ class Manager
     }
 
     /**
-     * Listen the queue, to distribute job.
+     * Start monitor and consumer worker.
      *
      * @throws \Throwable
      */
     public function listen(): void
     {
-        @swoole_set_process_name(sprintf('aint-queue-master for %s', $this->queue->getChannel()));
+        @swoole_set_process_name(sprintf('aint-queue-master#%s for %s', $this->masterPid, $this->queue->getChannel()));
 
         $this->queue->retryReserved();
 

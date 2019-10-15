@@ -39,7 +39,7 @@ class QueueStopCommand extends AbstractCommand
         $io = new SymfonyStyle($input, $output);
 
         if ($io->confirm("Are you sure to stop listening the $channel-queue?", false)) {
-            $pid = (int) \file_get_contents($this->manager->getPidFile());
+            $pid = (int) file_get_contents($this->manager->getPidFile());
             Process::kill($pid, SIGTERM);
             $io->writeln('Success to stop!');
         }

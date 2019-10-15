@@ -25,11 +25,11 @@ class PhpSerializer implements SerializerInterface
      */
     public function serialize($object): string
     {
-        if (!\is_object($object)) {
+        if (!is_object($object)) {
             throw new InvalidArgumentException('Argument invalid, it must be an object.');
         }
 
-        return \serialize($object);
+        return serialize($object);
     }
 
     /**
@@ -41,6 +41,6 @@ class PhpSerializer implements SerializerInterface
      */
     public function unSerialize(string $serialized)
     {
-        return \unserialize($serialized);
+        return unserialize($serialized);
     }
 }

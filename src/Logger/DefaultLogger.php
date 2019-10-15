@@ -13,7 +13,6 @@ namespace Littlesqx\AintQueue\Logger;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
-use Psr\Log\LoggerInterface;
 
 class DefaultLogger implements LoggerInterface
 {
@@ -23,6 +22,11 @@ class DefaultLogger implements LoggerInterface
     protected $executor;
 
     public function __construct()
+    {
+        $this->createExecutor();
+    }
+
+    protected function createExecutor()
     {
         $this->executor = new Logger('aint-queue-default');
         $handler = new StreamHandler('/tmp/aint-queue.log');
@@ -140,5 +144,13 @@ class DefaultLogger implements LoggerInterface
     public function log($level, $message, array $context = [])
     {
         $this->executor->log($level, $message, $context);
+    }
+
+    /**
+     * Reset the log connection, if exist.
+     */
+    public function resetConnection(): void
+    {
+        $this->createExecutor();
     }
 }

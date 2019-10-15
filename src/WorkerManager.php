@@ -87,16 +87,16 @@ class WorkerManager
         Process::signal(SIGCHLD, function () {
             while ($ret = Process::wait(false)) {
                 $pid = $ret['pid'] ?? -1;
+                $reload = 1 !== (int) ($ret['code'] ?? 0);
                 if (isset($this->consumers[$pid])) {
-                    $reload = 1 !== (int) ($ret['code'] ?? 0);
-                    $this->logger->info("worker#{$pid} for {$this->queue->getChannel()} is stopped.");
+                    $this->logger->info("consumer#{$pid} for {$this->queue->getChannel()} is stopped.");
                     unset($this->consumers[$pid]);
                     $reload && $this->createConsumer();
                 } elseif (isset($this->monitor[$pid])) {
                     $this->logger->info("monitor#{$pid} for {$this->queue->getChannel()} is stopped.");
                     Event::del($this->monitor[$pid]->getProcess()->pipe);
                     unset($this->monitor[$pid]);
-                    $this->createMonitor();
+                    $reload && $this->createMonitor();
                 } else {
                     $this->logger->warning('Invalid pid, can not match worker, ret = '.json_encode($ret));
                 }
@@ -109,7 +109,8 @@ class WorkerManager
      */
     public function reload(): void
     {
-        foreach (array_merge($this->monitor, $this->consumers) as $pid => $worker) {
+        $workers = $this->monitor + $this->consumers;
+        foreach ($workers as $pid => $worker) {
             Process::kill($pid, 0) && Process::kill($pid, SIGUSR1);
         }
     }
@@ -119,8 +120,9 @@ class WorkerManager
      */
     public function stop(): void
     {
-        foreach (array_merge($this->monitor, $this->consumers) as $pid => $worker) {
-            Process::kill($pid, 0) && Process::kill($pid, SIGTERM);
+        $workers = $this->monitor + $this->consumers;
+        foreach ($workers as $pid => $worker) {
+            Process::kill($pid, 0) && Process::kill($pid, SIGUSR2);
         }
     }
 
@@ -187,7 +189,7 @@ class WorkerManager
      */
     protected function flexWorkers(): void
     {
-        $isDynamic = $this->options['dynamic_mode'] ?? false;
+        $isDynamic = $this->options['consumer']['dynamic_mode'] ?? false;
 
         if (!$isDynamic) {
             return;

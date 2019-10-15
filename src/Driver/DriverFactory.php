@@ -28,14 +28,14 @@ class DriverFactory
     public static function make(string $channel, array $options = []): QueueInterface
     {
         $driverClass = $options['class'] ?? '';
-        if (!\class_exists($driverClass)) {
-            throw new InvalidDriverException(\sprintf('[Error] class %s is not found.', $driverClass));
+        if (!class_exists($driverClass)) {
+            throw new InvalidDriverException(sprintf('[Error] class %s is not found.', $driverClass));
         }
 
         $driver = new $driverClass($channel, $options);
 
         if (!$driver instanceof QueueInterface) {
-            throw new InvalidDriverException(\sprintf('[Error] class %s is not instanceof %s.', $driverClass, QueueInterface::class));
+            throw new InvalidDriverException(sprintf('[Error] class %s is not instanceof %s.', $driverClass, QueueInterface::class));
         }
 
         return $driver;

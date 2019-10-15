@@ -103,18 +103,18 @@ class Queue extends AbstractQueue
         $serializedMessage = null;
         $serializerType = null;
 
-        if (\is_callable($message)) {
+        if (is_callable($message)) {
             $serializedMessage = $this->closureSerializer->serialize($message);
             $serializerType = Factory::SERIALIZER_TYPE_CLOSURE;
         } elseif ($message instanceof JobInterface) {
             $serializedMessage = $this->phpSerializer->serialize($message);
             $serializerType = Factory::SERIALIZER_TYPE_PHP;
         } else {
-            $type = \is_object($message) ? \get_class($message) : \gettype($message);
+            $type = is_object($message) ? get_class($message) : gettype($message);
             throw new InvalidArgumentException($type.' type message is not allowed.');
         }
 
-        $pushMessage = \json_encode([
+        $pushMessage = json_encode([
             'serializerType' => $serializerType,
             'serializedMessage' => $serializedMessage,
         ]);
@@ -125,7 +125,7 @@ class Queue extends AbstractQueue
         $redis->hset("{$this->channelPrefix}{$this->getChannel()}:messages", $id, $pushMessage);
 
         if ($delay > 0) {
-            $redis->zadd("{$this->channelPrefix}{$this->getChannel()}:delayed", [$id => time() + $this->pushDelay]);
+            $redis->zadd("{$this->channelPrefix}{$this->getChannel()}:delayed", [$id => time() + $delay]);
         } else {
             $redis->lpush("{$this->channelPrefix}{$this->getChannel()}:waiting", [$id]);
         }
@@ -199,7 +199,7 @@ class Queue extends AbstractQueue
             "{$this->channelPrefix}{$this->getChannel()}:delayed",
             "{$this->channelPrefix}{$this->getChannel()}:reserved",
             $id,
-            \time() + $delay
+            time() + $delay
         );
 
         $this->releaseConnection($redis);
@@ -294,7 +294,7 @@ class Queue extends AbstractQueue
             return [$id, 0, null];
         }
 
-        $message = \json_decode($payload, true);
+        $message = json_decode($payload, true);
 
         $serializer = Factory::getInstance($message['serializerType']);
 
@@ -316,7 +316,7 @@ class Queue extends AbstractQueue
             2,
             "{$this->channelPrefix}{$this->getChannel()}:delayed",
             "{$this->channelPrefix}{$this->getChannel()}:waiting",
-            \time()
+            time()
         );
 
         $this->releaseConnection($redis);
@@ -450,7 +450,7 @@ class Queue extends AbstractQueue
             "{$this->channelPrefix}{$this->getChannel()}:delayed",
             "{$this->channelPrefix}{$this->getChannel()}:failed",
             $id,
-            \time() + $delay
+            time() + $delay
         );
 
         $this->releaseConnection($redis);
