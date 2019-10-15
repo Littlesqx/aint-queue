@@ -129,19 +129,19 @@ class WorkerManager
      */
     protected function createMonitor(): void
     {
-        $monitorWorker = new MonitorWorker($this->queue, $this->logger, $this->options);
+        $monitorWorker = new MonitorWorker($this->queue, $this->logger, $this->options['monitor']);
         $pid = $monitorWorker->start();
         $this->monitor[$pid] = $monitorWorker;
         Event::add($monitorWorker->getProcess()->pipe, function () use ($monitorWorker) {
             $message = $monitorWorker->getProcess()->read(64 * 1024);
             $pipeMessage = new PipeMessage($message);
-            if ($pipeMessage->type() === PipeMessage::MESSAGE_TYPE_CONSUMER_FLEX) {
-                $this->logger->info(sprintf(
-                    'Received message from monitor, type = %s, payload = %s',
-                    'MESSAGE_TYPE_CONSUMER_FLEX',
-                    json_encode($pipeMessage->payload())
-                ));
-                $this->flexWorkers();
+
+            $this->logger->info(sprintf('Received message from monitor, type = %s, payload = %s', $pipeMessage->type(), json_encode($pipeMessage->payload())));
+
+            switch ($pipeMessage->type()) {
+                case PipeMessage::MESSAGE_TYPE_CONSUMER_FLEX:
+                    $this->flexWorkers();
+                    break;
             }
         });
     }

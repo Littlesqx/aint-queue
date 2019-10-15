@@ -39,6 +39,12 @@ return [
                     'interval' => 5 * 60,
                     'handler' => [],
                 ],
+                'consumer' => [
+                    'flex_interval' => 5 * 60,
+                ],
+                'job' => [
+                    'move_expired_interval' => 2,
+                ]
             ]
         ],
     ],
