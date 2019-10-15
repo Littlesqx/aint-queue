@@ -10,7 +10,7 @@
 
 namespace Littlesqx\AintQueue;
 
-interface JobSnapshotHandlerInterface
+interface JobSnapshotterInterface
 {
     /**
      * @param array $snapshot

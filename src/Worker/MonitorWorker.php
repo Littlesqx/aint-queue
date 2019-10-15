@@ -10,7 +10,7 @@
 
 namespace Littlesqx\AintQueue\Worker;
 
-use Littlesqx\AintQueue\JobSnapshotHandlerInterface;
+use Littlesqx\AintQueue\JobSnapshotterInterface;
 use Swoole\Timer;
 
 class MonitorWorker extends AbstractWorker
@@ -62,8 +62,8 @@ class MonitorWorker extends AbstractWorker
                     continue;
                 }
                 $handler = new $handler();
-                if (!$handler instanceof JobSnapshotHandlerInterface) {
-                    $this->logger->warning('JobSnapshotHandler must implement JobSnapshotHandlerInterface.');
+                if (!$handler instanceof JobSnapshotterInterface) {
+                    $this->logger->warning('JobSnapshotHandler must implement JobSnapshotterInterface.');
                     continue;
                 }
                 $handler->handle($snapshot);
