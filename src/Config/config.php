@@ -44,8 +44,8 @@ return [
                 ],
                 'job' => [
                     'move_expired_interval' => 2,
-                ]
-            ]
+                ],
+            ],
         ],
     ],
 ];

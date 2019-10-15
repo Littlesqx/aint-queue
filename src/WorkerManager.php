@@ -98,7 +98,7 @@ class WorkerManager
                     unset($this->monitor[$pid]);
                     $this->createMonitor();
                 } else {
-                    $this->logger->info('Invalid pid, can not match worker, ret = ' . json_encode($ret));
+                    $this->logger->info('Invalid pid, can not match worker, ret = '.json_encode($ret));
                 }
             }
         });

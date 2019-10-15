@@ -162,7 +162,6 @@ class Manager
 
         // custom signal - reserve (a signal)
         Process::signal(SIGUSR2, function () {
-
         });
     }
 
