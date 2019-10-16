@@ -36,5 +36,5 @@ interface JobInterface
      *
      * @return int
      */
-    public function getNextRetryTime(int $attempt): int;
+    public function getRetryTime(int $attempt): int;
 }
