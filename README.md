@@ -1,19 +1,20 @@
 <h1 align="center"> aint-queue </h1>
 
-<p align="center"> Queue but not only queue, which is powered by swoole.</p>
+<p align="center"> An async-queue library built on top swoole, flexable multi-consumer, coroutine supported.</p>
 
+![img](./docs/screenshot.png)
 ## Required
 
 - PHP 7.1+
 - Swoole 4.3+
 
-## Installing
+## Install
 
 ```shell
 $ composer require littlesqx/aint-queue -vvv
 ```
 
-## Documentation
+## Document
 
 - [中文](./docs/zh-CN/overview.md)
 - English
@@ -40,8 +41,6 @@ return [
                 'port' => 6379,
                 'database' => '0',
                 // 'password' => 'password',
-                // Required if you use some blocking operation.
-                'read_write_timeout' => 0,
             ],
         ],
         'pid_path' => '/var/run/aint-queue',
@@ -50,8 +49,10 @@ return [
                 'sleep_seconds' => 2,
                 'memory_limit' => 96, // Mb
                 'dynamic_mode' => true,
+                'capacity' => 6, // The capacity that every consumer can handle in health and in short time,
+                                 // it affects the worker number when dynamic-mode.
                 'min_worker_number' => 5,
-                'max_worker_number' => 10,
+                'max_worker_number' => 30,
             ],
             'monitor' => [
                 'job_snapshot' => [
@@ -59,19 +60,19 @@ return [
                     'handler' => [],
                 ],
                 'consumer' => [
-                    'flex_interval' => 5 * 60,
+                    'flex_interval' => 5 * 60, // only work when consumer.dynamic_mode = true
                 ],
                 'job' => [
                     'move_expired_interval' => 2,
-                ]
-            ]
+                ],
+            ],
         ],
     ],
 ];
 
 ```
 
-### Queueing
+### Queue
 
 ```php
 <?php
