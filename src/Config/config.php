@@ -29,6 +29,8 @@ return [
                 'sleep_seconds' => 2,
                 'memory_limit' => 96, // Mb
                 'dynamic_mode' => true,
+                'capacity' => 6, // The capacity that every consumer can handle in health and in short time,
+                                 // it affects the worker number when dynamic-mode.
                 'min_worker_number' => 5,
                 'max_worker_number' => 30,
             ],

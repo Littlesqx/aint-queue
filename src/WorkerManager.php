@@ -191,6 +191,7 @@ class WorkerManager
      */
     protected function flexWorkers(): void
     {
+        $capacity = max($this->options['consumer']['capacity'] ?? 5, 1);
         $isDynamic = $this->options['consumer']['dynamic_mode'] ?? false;
 
         if (!$isDynamic) {
@@ -200,7 +201,7 @@ class WorkerManager
         try {
             [$waiting] = $this->queue->status();
 
-            $healthWorkerNumber = max($this->minConsumerNum, min((int) ($waiting / 5), $this->maxConsumerNum));
+            $healthWorkerNumber = max($this->minConsumerNum, min((int) ($waiting / $capacity), $this->maxConsumerNum));
 
             $differ = count($this->consumers) - $healthWorkerNumber;
 
