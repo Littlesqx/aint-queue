@@ -21,8 +21,6 @@ return [
                 'port' => 6379,
                 'database' => '0',
                 // 'password' => 'password',
-                // Required if you use some blocking operation.
-                'read_write_timeout' => 0,
             ],
         ],
         'pid_path' => '/var/run/aint-queue',
@@ -40,7 +38,7 @@ return [
                     'handler' => [],
                 ],
                 'consumer' => [
-                    'flex_interval' => 5 * 60,
+                    'flex_interval' => 5 * 60, // only work when consumer.dynamic_mode = true
                 ],
                 'job' => [
                     'move_expired_interval' => 2,
