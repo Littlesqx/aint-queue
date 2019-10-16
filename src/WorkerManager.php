@@ -10,10 +10,10 @@
 
 namespace Littlesqx\AintQueue;
 
+use Littlesqx\AintQueue\Logger\LoggerInterface;
 use Littlesqx\AintQueue\Worker\ConsumerWorker;
 use Littlesqx\AintQueue\Worker\MonitorWorker;
 use Littlesqx\AintQueue\Worker\PipeMessage;
-use Psr\Log\LoggerInterface;
 use Swoole\Event;
 use Swoole\Process;
 
@@ -206,6 +206,8 @@ class WorkerManager
             $differ < 0 && $this->createConsumer() && $differ++;
             // release idle workers
             $differ > 0 && $this->releaseConsumer() && $differ--;
+
+            sleep(1);
         }
     }
 }
