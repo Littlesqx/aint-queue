@@ -1,6 +1,6 @@
 <h1 align="center"> aint-queue </h1>
 
-<p align="center"> A async-queue library built on top swoole, flexable multi-consumer, coroutine supported.</p>
+<p align="center"> A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported.</p>
 
 <div align="center"><img src="./docs/screenshot.png"/></div>
 
