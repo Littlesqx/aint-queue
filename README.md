@@ -2,7 +2,8 @@
 
 <p align="center"> An async-queue library built on top swoole, flexable multi-consumer, coroutine supported.</p>
 
-![img](./docs/screenshot.png)
+<div style="text-align: center"><img src="./docs/screenshot.png"/></div>
+
 ## Required
 
 - PHP 7.1+
