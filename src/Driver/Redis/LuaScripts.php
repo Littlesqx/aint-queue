@@ -8,6 +8,8 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
+declare(strict_types=1);
+
 namespace Littlesqx\AintQueue\Driver\Redis;
 
 /**
@@ -27,7 +29,7 @@ class LuaScripts
      *
      * @return string
      */
-    public static function pop()
+    public static function pop(): string
     {
         return <<<'LUA'
 -- Pop a job from queue...
@@ -53,7 +55,7 @@ LUA;
      *
      * @return string
      */
-    public static function push()
+    public static function push(): string
     {
         return <<<'LUA'
 if (ARGV[1] ~= nil) then
@@ -81,7 +83,7 @@ LUA;
      *
      * @return string
      */
-    public static function release()
+    public static function release(): string
     {
         return <<<'LUA'
 -- Remove the job from the current queue...
@@ -104,7 +106,7 @@ LUA;
      *
      * @return string
      */
-    public static function fail()
+    public static function fail(): string
     {
         return <<<'LUA'
 if (ARGV[1] ~= nil) then
@@ -123,7 +125,7 @@ LUA;
      *
      * @return string
      */
-    public static function migrateExpiredJobs()
+    public static function migrateExpiredJobs(): string
     {
         return <<<'LUA'
 -- Get all of the jobs with an expired "score"...

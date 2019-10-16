@@ -8,6 +8,8 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
+declare(strict_types=1);
+
 namespace Littlesqx\AintQueue\Console;
 
 use Symfony\Component\Console\Helper\Table;

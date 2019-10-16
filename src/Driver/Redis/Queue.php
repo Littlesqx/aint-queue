@@ -8,6 +8,8 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
+declare(strict_types=1);
+
 namespace Littlesqx\AintQueue\Driver\Redis;
 
 use Littlesqx\AintQueue\AbstractQueue;
@@ -136,11 +138,11 @@ class Queue extends AbstractQueue
     /**
      * Pop a job message from waiting-queue.
      *
-     * @return mixed
+     * @return int|null
      *
      * @throws \Throwable
      */
-    public function pop()
+    public function pop(): ?int
     {
         $redis = $this->getConnection();
 
@@ -155,19 +157,19 @@ class Queue extends AbstractQueue
 
         $this->releaseConnection($redis);
 
-        return $id;
+        return null === $id ? null : (int) $id;
     }
 
     /**
      * Remove specific finished job from current queue after exec.
      *
-     * @param $id
+     * @param int $id
      *
      * @return mixed
      *
      * @throws \Throwable
      */
-    public function remove($id)
+    public function remove(int $id): void
     {
         $redis = $this->getConnection();
 
@@ -181,19 +183,16 @@ class Queue extends AbstractQueue
     /**
      * Release a job which was failed to execute.
      *
-     * @param $id
+     * @param int $id
      * @param int $delay
      *
-     * @return bool
-     *
      * @throws \Throwable
-     * @throws RuntimeException
      */
-    public function release($id, int $delay = 0)
+    public function release(int $id, int $delay = 0): void
     {
         $redis = $this->getConnection();
 
-        $ret = $redis->eval(
+        $redis->eval(
             LuaScripts::release(),
             2,
             "{$this->channelPrefix}{$this->getChannel()}:delayed",
@@ -203,22 +202,20 @@ class Queue extends AbstractQueue
         );
 
         $this->releaseConnection($redis);
-
-        return $ret;
     }
 
     /**
      * Get status of specific job.
      *
-     * @param $id
+     * @param int $id
      *
-     * @return mixed
+     * @return int
      *
      * @throws InvalidArgumentException
      * @throws RuntimeException
      * @throws \Throwable
      */
-    public function getStatus($id)
+    public function getStatus(int $id): int
     {
         if (!is_numeric($id) || $id <= 0) {
             throw new InvalidArgumentException("Invalid message ID: $id.");
@@ -248,12 +245,9 @@ class Queue extends AbstractQueue
     /**
      * Clear current queue.
      *
-     * @return mixed
-     *
-     * @throws RuntimeException
      * @throws \Throwable
      */
-    public function clear()
+    public function clear(): void
     {
         $redis = $this->getConnection();
 
@@ -270,13 +264,11 @@ class Queue extends AbstractQueue
      *
      * @param int $id
      *
-     * @return mixed
+     * @return array
      *
-     * @throws InvalidArgumentException
-     * @throws RuntimeException
      * @throws \Throwable
      */
-    public function get($id)
+    public function get(int $id): array
     {
         if (!$id) {
             return [$id, 0, null];
@@ -298,7 +290,7 @@ class Queue extends AbstractQueue
 
         $serializer = Factory::getInstance($message['serializerType']);
 
-        return [$id, $attempts, $serializer->unSerialize($message['serializedMessage'])];
+        return [$id, (int) $attempts, $serializer->unSerialize($message['serializedMessage'])];
     }
 
     /**
@@ -357,10 +349,9 @@ class Queue extends AbstractQueue
      * @param int         $id
      * @param string|null $payload
      *
-     * @throws RuntimeException
      * @throws \Throwable
      */
-    public function failed($id, string $payload = null)
+    public function failed(int $id, string $payload = null): void
     {
         $redis = $this->getConnection();
 
@@ -415,13 +406,13 @@ class Queue extends AbstractQueue
     /**
      * Clear failed job.
      *
-     * @param $id
+     * @param int $id
      *
      * @return mixed
      *
      * @throws \Throwable
      */
-    public function clearFailed($id)
+    public function clearFailed(int $id): void
     {
         $redis = $this->getConnection();
 
@@ -433,18 +424,16 @@ class Queue extends AbstractQueue
     /**
      * Reload failed job.
      *
-     * @param $id
+     * @param int $id
      * @param int $delay
-     *
-     * @return mixed
      *
      * @throws \Throwable
      */
-    public function reloadFailed($id, int $delay = 0)
+    public function reloadFailed(int $id, int $delay = 0): void
     {
         $redis = $this->getConnection();
 
-        $ret = $redis->eval(
+        $redis->eval(
             LuaScripts::release(),
             2,
             "{$this->channelPrefix}{$this->getChannel()}:delayed",
@@ -454,7 +443,5 @@ class Queue extends AbstractQueue
         );
 
         $this->releaseConnection($redis);
-
-        return $ret;
     }
 }

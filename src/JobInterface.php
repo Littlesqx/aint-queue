@@ -8,6 +8,8 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
+declare(strict_types=1);
+
 namespace Littlesqx\AintQueue;
 
 interface JobInterface
@@ -17,7 +19,7 @@ interface JobInterface
      *
      * @return mixed
      */
-    public function handle();
+    public function handle(): void;
 
     /**
      * Determine whether current job can retry if fail.

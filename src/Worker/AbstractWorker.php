@@ -8,6 +8,8 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
+declare(strict_types=1);
+
 namespace Littlesqx\AintQueue\Worker;
 
 use Littlesqx\AintQueue\Logger\LoggerInterface;
@@ -94,6 +96,8 @@ abstract class AbstractWorker
 
     /**
      * Init, reset resource connection and register signal.
+     *
+     * @throws \Throwable
      */
     protected function init(): void
     {

@@ -8,6 +8,8 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
+declare(strict_types=1);
+
 namespace Littlesqx\AintQueue\Worker;
 
 use Littlesqx\AintQueue\JobSnapshotterInterface;
@@ -17,6 +19,8 @@ class MonitorWorker extends AbstractWorker
 {
     /**
      * Working for handle job in loop.
+     *
+     * @throws \Throwable
      */
     public function work(): void
     {

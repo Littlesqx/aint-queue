@@ -8,6 +8,8 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
+declare(strict_types=1);
+
 namespace Littlesqx\AintQueue\Worker;
 
 use Littlesqx\AintQueue\Exception\InvalidJobException;
@@ -18,6 +20,8 @@ class ConsumerWorker extends AbstractWorker
 {
     /**
      * Working for handle job in loop.
+     *
+     * @throws \Throwable
      */
     public function work(): void
     {
@@ -72,13 +76,14 @@ class ConsumerWorker extends AbstractWorker
     /**
      * Handle job.
      *
-     * @param $messageId
+     * @param int $messageId
      *
      * @throws \Throwable
      */
-    protected function handle($messageId): void
+    protected function handle(int $messageId): void
     {
-        $id = $attempts = $job = null;
+        $job = null;
+        $id = $attempts = 0;
 
         try {
             /** @var $job \Closure|JobInterface */

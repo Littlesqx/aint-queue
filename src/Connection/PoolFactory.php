@@ -8,6 +8,8 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
+declare(strict_types=1);
+
 namespace Littlesqx\AintQueue\Connection;
 
 use Littlesqx\AintQueue\Exception\InvalidArgumentException;

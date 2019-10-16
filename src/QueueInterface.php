@@ -8,10 +8,9 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
-namespace Littlesqx\AintQueue;
+declare(strict_types=1);
 
-use Littlesqx\AintQueue\Exception\InvalidArgumentException;
-use Littlesqx\AintQueue\Exception\RuntimeException;
+namespace Littlesqx\AintQueue;
 
 interface QueueInterface
 {
@@ -27,20 +26,20 @@ interface QueueInterface
      *
      * @param int $id
      *
-     * @return mixed
-     *
-     * @throws InvalidArgumentException
+     * @return array
+     * @throws \Throwable
      */
-    public function get($id);
+    public function get(int $id): array;
 
     /**
      * Get status of specific job.
      *
-     * @param $id
+     * @param int $id
      *
-     * @return mixed
+     * @return int
+     * @throws \Throwable
      */
-    public function getStatus($id);
+    public function getStatus(int $id): int;
 
     /**
      * Push an executable job message into queue.
@@ -48,92 +47,100 @@ interface QueueInterface
      * @param \Closure|JobInterface $message
      * @param int                   $delay
      *
-     * @return mixed
+     * @throws \Throwable
      */
-    public function push($message, int $delay = 0);
+    public function push($message, int $delay = 0): void;
 
     /**
      * Pop a job message from waiting-queue.
      *
-     * @return mixed
+     * @return int|null
+     * @throws \Throwable
      */
-    public function pop();
+    public function pop(): ?int;
 
     /**
      * Remove specific job from current queue.
      *
-     * @param $id
+     * @param int $id
      *
-     * @return mixed
+     * @throws \Throwable
      */
-    public function remove($id);
+    public function remove(int $id): void;
 
     /**
      * Release a job which was failed to execute.
      *
-     * @param $id
+     * @param int $id
      * @param int $delay
+     *
+     * @throws \Throwable
      */
-    public function release($id, int $delay = 0);
+    public function release(int $id, int $delay = 0): void;
 
     /**
      * Fail a job.
      *
-     * @param $id
+     * @param int $id
      * @param string|null $payload
      *
-     * @throws RuntimeException
      * @throws \Throwable
      */
-    public function failed($id, string $payload = null);
+    public function failed(int $id, string $payload = null): void;
 
     /**
      * Get all failed jobs.
      *
      * @return array
+     * @throws \Throwable
      */
     public function getFailed(): array;
 
     /**
      * Clear failed job.
      *
-     * @param $id
+     * @param int $id
      *
-     * @return mixed
+     * @throws \Throwable
      */
-    public function clearFailed($id);
+    public function clearFailed(int $id): void;
 
     /**
      * Reload failed job.
      *
-     * @param $id
+     * @param int $id
      * @param int $delay
      *
-     * @return mixed
+     * @throws \Throwable
      */
-    public function reloadFailed($id, int $delay = 0);
+    public function reloadFailed(int $id, int $delay = 0): void;
 
     /**
      * Clear current queue.
      *
-     * @return mixed
+     * @throws \Throwable
      */
-    public function clear();
+    public function clear(): void;
 
     /**
      * Get status of current queue.
      *
      * @return array
+     * @throws \Throwable
      */
     public function status(): array;
 
     /**
      * Reset connection.
+     *
+     * @throws \Throwable
      */
     public function resetConnection(): void;
 
     /**
      * Disconnect the connection.
+     *
+     * @throws \Throwable
      */
     public function destroyConnection(): void;
 
@@ -141,6 +148,7 @@ interface QueueInterface
      * @param int $id of a job message
      *
      * @return bool
+     * @throws \Throwable
      */
     public function isWaiting(int $id): bool;
 
@@ -148,6 +156,7 @@ interface QueueInterface
      * @param int $id of a job message
      *
      * @return bool
+     * @throws \Throwable
      */
     public function isReserved(int $id): bool;
 
@@ -155,6 +164,7 @@ interface QueueInterface
      * @param int $id of a job message
      *
      * @return bool
+     * @throws \Throwable
      */
     public function isDone(int $id): bool;
 
@@ -162,6 +172,7 @@ interface QueueInterface
      * @param int $id of a job message
      *
      * @return bool
+     * @throws \Throwable
      */
     public function isFailed(int $id): bool;
 
@@ -174,6 +185,8 @@ interface QueueInterface
 
     /**
      * Moved the expired job to waiting queue.
+     *
+     * @throws \Throwable
      */
     public function migrateExpired(): void;
 }

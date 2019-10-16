@@ -8,6 +8,8 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
+declare(strict_types=1);
+
 namespace Littlesqx\AintQueue\Serializer;
 
 use Littlesqx\AintQueue\Exception\InvalidArgumentException;
@@ -17,7 +19,7 @@ class PhpSerializer implements SerializerInterface
     /**
      * Serialize an object to string.
      *
-     * @param $object
+     * @param object $object
      *
      * @return string
      *

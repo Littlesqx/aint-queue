@@ -8,6 +8,8 @@
  * This source file is subject to the MIT license that is bundled.
  */
 
+declare(strict_types=1);
+
 namespace Littlesqx\AintQueue;
 
 use Littlesqx\AintQueue\Logger\LoggerInterface;
@@ -195,19 +197,23 @@ class WorkerManager
             return;
         }
 
-        [$waiting] = $this->queue->status();
+        try {
+            [$waiting] = $this->queue->status();
 
-        $healthWorkerNumber = max($this->minConsumerNum, min((int) ($waiting / 5), $this->maxConsumerNum));
+            $healthWorkerNumber = max($this->minConsumerNum, min((int) ($waiting / 5), $this->maxConsumerNum));
 
-        $differ = count($this->consumers) - $healthWorkerNumber;
+            $differ = count($this->consumers) - $healthWorkerNumber;
 
-        while (0 !== $differ) {
-            // create more workers
-            $differ < 0 && $this->createConsumer() && $differ++;
-            // release idle workers
-            $differ > 0 && $this->releaseConsumer() && $differ--;
+            while (0 !== $differ) {
+                // create more workers
+                $differ < 0 && $this->createConsumer() && $differ++;
+                // release idle workers
+                $differ > 0 && $this->releaseConsumer() && $differ--;
 
-            sleep(1);
+                sleep(1);
+            }
+        } catch (\Throwable $t) {
+            $this->logger->error('Fail to flex consumer worker number, error: '.$t->getMessage());
         }
     }
 }
