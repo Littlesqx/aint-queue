@@ -1,6 +1,6 @@
 {
     "name": "littlesqx/aint-queue",
-    "description": "Queue but not only queue, which powered by swoole.",
+    "description": "A async-queue library built on top swoole, flexable multi-consumer, coroutine supported.",
     "type": "library",
     "license": "MIT",
     "authors": [
