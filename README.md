@@ -2,7 +2,7 @@
 
 <p align="center"> A async-queue library built on top swoole, flexable multi-consumer, coroutine supported.</p>
 
-<img style="display: block; margin: 0 auto;" src="./docs/screenshot.png" alt="" />
+<div align="center"><img src="./docs/screenshot.png"/></div>
 
 ## Required
 
