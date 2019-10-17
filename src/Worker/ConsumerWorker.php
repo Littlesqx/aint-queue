@@ -99,12 +99,13 @@ class ConsumerWorker extends AbstractWorker
                 $delay = max($job->getRetryTime($attempts) - time(), 0);
                 $this->queue->release($id, $delay);
             } else {
-                $payload = json_encode([
+                $payload = [
                     'last_error' => get_class($t),
                     'last_error_message' => $t->getMessage(),
                     'attempts' => $attempts,
-                ]);
-                $this->queue->failed($id, $payload);
+                ];
+                $this->queue->failed($id, json_encode($payload));
+                $job instanceof JobInterface && $job->failed($id, $payload);
             }
             $this->logger->error(get_class($t).': '.$t->getMessage(), [
                 'driver' => get_class($this->queue),

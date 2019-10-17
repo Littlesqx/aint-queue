@@ -39,4 +39,12 @@ interface JobInterface
      * @return int
      */
     public function getRetryTime(int $attempt): int;
+
+    /**
+     * After failed, this function will be called.
+     *
+     * @param int $id
+     * @param array$payload
+     */
+    public function failed(int $id, array $payload): void;
 }
