@@ -11,7 +11,7 @@
 use Littlesqx\AintQueue\Driver\Redis\Queue as RedisQueue;
 
 return [
-    'default' => [
+    'example' => [
         'driver' => [
             'class' => RedisQueue::class,
             'connection' => [

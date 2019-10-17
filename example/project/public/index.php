@@ -10,9 +10,8 @@
 
 require __DIR__.'/../vendor/autoload.php';
 
-use App\Job\AsyncJob;
-use App\Job\CoJob;
-use App\Job\SyncJob;
+use App\Job\SimpleJob;
+use App\Job\CoroutineJob;
 use Littlesqx\AintQueue\Driver\DriverFactory;
 
 $config = require __DIR__.'/../config/aint-queue.php';
@@ -26,8 +25,7 @@ $queue->push(function () {
     echo "Hello AintQueue\n";
 });
 
-$queue->push(new SyncJob());
-$queue->push(new AsyncJob());
-$queue->push(new CoJob());
+$queue->push(new SimpleJob());
+$queue->push(new CoroutineJob());
 
 header('HTTP/1.1 201 Created');

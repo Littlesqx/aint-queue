@@ -28,32 +28,33 @@ class CoroutineJob implements JobInterface
         $result = [];
         $begin = time();
         Coroutine::create(function () use (&$result, $wg) {
-            Coroutine::create(function () use (&$result, $wg) {
-                Coroutine::create(function () use (&$result, $wg) {
-                    Coroutine::sleep(1);
-                    $result[2] = 'c';
-                    Coroutine::create(function () use (&$result, $wg) {
-                        $result[3] = 'd';
-                        Coroutine::sleep(1);
-                        Coroutine::create(function () use (&$result, $wg) {
-                            $result[4] = 'e';
-                            Coroutine::sleep(1);
-                            $wg->done();
-                        });
-                        $wg->done();
-                    });
-                    $wg->done();
-                });
-                Coroutine::sleep(1);
-                $result[1] = 'b';
-                $wg->done();
-            });
             Coroutine::sleep(1);
             $result[0] = 'a';
             $wg->done();
         });
+        Coroutine::create(function () use (&$result, $wg) {
+            Coroutine::sleep(1);
+            $result[1] = 'b';
+            $wg->done();
+        });
+        Coroutine::create(function () use (&$result, $wg) {
+            Coroutine::sleep(1);
+            $result[2] = 'c';
+            $wg->done();
+        });
+        Coroutine::create(function () use (&$result, $wg) {
+            $result[3] = 'd';
+            Coroutine::sleep(1);
+            $wg->done();
+        });
+        Coroutine::create(function () use (&$result, $wg) {
+            $result[4] = 'e';
+            Coroutine::sleep(1);
+            $wg->done();
+        });
         $wg->wait(2);
-        echo 'took ', time() - $begin, ' seconds\n';
+        echo 'took ', time() - $begin, ' seconds', "\n";
+        var_dump($result);
     }
 
     /**
