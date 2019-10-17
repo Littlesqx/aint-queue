@@ -10,9 +10,9 @@
 
 namespace App\Event;
 
-use Littlesqx\AintQueue\JobSnapshotHandlerInterface;
+use Littlesqx\AintQueue\JobSnapshotterInterface;
 
-class ExampleEvent implements JobSnapshotHandlerInterface
+class ExampleEvent implements JobSnapshotterInterface
 {
     /**
      * @param array $snapshot

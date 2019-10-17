@@ -11,7 +11,7 @@
     ],
     "require": {
         "php": ">=7.1",
-        "littlesqx/aint-queue": "^0.4.0"
+        "littlesqx/aint-queue": "dev-master"
     },
     "autoload": {
         "psr-4": {
