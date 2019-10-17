@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the littlesqx/aint-queue.
  *
@@ -7,8 +9,6 @@
  *
  * This source file is subject to the MIT license that is bundled.
  */
-
-declare(strict_types=1);
 
 namespace Littlesqx\AintQueue;
 
@@ -27,6 +27,7 @@ interface QueueInterface
      * @param int $id
      *
      * @return array
+     *
      * @throws \Throwable
      */
     public function get(int $id): array;
@@ -37,6 +38,7 @@ interface QueueInterface
      * @param int $id
      *
      * @return int
+     *
      * @throws \Throwable
      */
     public function getStatus(int $id): int;
@@ -55,6 +57,7 @@ interface QueueInterface
      * Pop a job message from waiting-queue.
      *
      * @return int|null
+     *
      * @throws \Throwable
      */
     public function pop(): ?int;
@@ -81,7 +84,7 @@ interface QueueInterface
     /**
      * Fail a job.
      *
-     * @param int $id
+     * @param int         $id
      * @param string|null $payload
      *
      * @throws \Throwable
@@ -92,6 +95,7 @@ interface QueueInterface
      * Get all failed jobs.
      *
      * @return array
+     *
      * @throws \Throwable
      */
     public function getFailed(): array;
@@ -126,6 +130,7 @@ interface QueueInterface
      * Get status of current queue.
      *
      * @return array
+     *
      * @throws \Throwable
      */
     public function status(): array;
@@ -148,6 +153,7 @@ interface QueueInterface
      * @param int $id of a job message
      *
      * @return bool
+     *
      * @throws \Throwable
      */
     public function isWaiting(int $id): bool;
@@ -156,6 +162,7 @@ interface QueueInterface
      * @param int $id of a job message
      *
      * @return bool
+     *
      * @throws \Throwable
      */
     public function isReserved(int $id): bool;
@@ -164,6 +171,7 @@ interface QueueInterface
      * @param int $id of a job message
      *
      * @return bool
+     *
      * @throws \Throwable
      */
     public function isDone(int $id): bool;
@@ -172,6 +180,7 @@ interface QueueInterface
      * @param int $id of a job message
      *
      * @return bool
+     *
      * @throws \Throwable
      */
     public function isFailed(int $id): bool;

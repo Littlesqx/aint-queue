@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /*
  * This file is part of the littlesqx/aint-queue.
  *
@@ -7,8 +9,6 @@
  *
  * This source file is subject to the MIT license that is bundled.
  */
-
-declare(strict_types=1);
 
 namespace Littlesqx\AintQueue;
 
@@ -86,6 +86,7 @@ abstract class AbstractQueue implements QueueInterface
      * @param int $id of a job message
      *
      * @return bool
+     *
      * @throws \Throwable
      */
     public function isWaiting(int $id): bool
@@ -97,6 +98,7 @@ abstract class AbstractQueue implements QueueInterface
      * @param int $id of a job message
      *
      * @return bool
+     *
      * @throws \Throwable
      */
     public function isReserved(int $id): bool
@@ -108,6 +110,7 @@ abstract class AbstractQueue implements QueueInterface
      * @param int $id of a job message
      *
      * @return bool
+     *
      * @throws \Throwable
      */
     public function isDone(int $id): bool
@@ -119,6 +122,7 @@ abstract class AbstractQueue implements QueueInterface
      * @param int $id of a job message
      *
      * @return bool
+     *
      * @throws \Throwable
      */
     public function isFailed(int $id): bool

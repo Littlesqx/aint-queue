@@ -52,7 +52,7 @@ class SimpleJob implements JobInterface
     /**
      * After failed, this function will be called.
      *
-     * @param int $id
+     * @param int   $id
      * @param array $payload
      */
     public function failed(int $id, array $payload): void
