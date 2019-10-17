@@ -65,7 +65,7 @@ All the options:
 
 | name | type | comment | default |
 | :- | :- | :- | :- |
-| channel | string | The queue unit, every queue pusher and queue listener work for. Multiple channel supported. | default |
+| channel | string | The queue unit, every queue pusher and queue listener work for. Multiple channel supported, use `--channel` option. | default |
 | driver.class | string | Queue driver class, implements QueueInterface. | Redis |
 | driver.connection | map | Queue driver's config. | |
 | pid_path | string | The path of listener master pid file. Noted that permission required. | /var/run/aint-queue |
