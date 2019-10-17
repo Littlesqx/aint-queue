@@ -133,7 +133,7 @@ class WorkerManager
      */
     protected function createMonitor(): void
     {
-        $monitorWorker = new MonitorWorker($this->queue, $this->logger, $this->options['monitor']);
+        $monitorWorker = new MonitorWorker($this->queue, $this->logger, $this->options);
         $pid = $monitorWorker->start();
         $this->monitor[$pid] = $monitorWorker;
         Event::add($monitorWorker->getProcess()->pipe, function () use ($monitorWorker) {
@@ -192,11 +192,6 @@ class WorkerManager
     protected function flexWorkers(): void
     {
         $capacity = max($this->options['consumer']['capacity'] ?? 5, 1);
-        $isDynamic = $this->options['consumer']['dynamic_mode'] ?? false;
-
-        if (!$isDynamic) {
-            return;
-        }
 
         try {
             [$waiting] = $this->queue->status();

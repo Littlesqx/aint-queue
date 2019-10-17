@@ -53,7 +53,7 @@ class Manager
         $this->masterPid = getmypid();
 
         $this->logger = new DefaultLogger();
-        $this->workerManager = new WorkerManager($this->queue, $this->logger, $options['worker'] ?? []);
+        $this->workerManager = new WorkerManager($this->queue, $this->logger, $options);
     }
 
     /**

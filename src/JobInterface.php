@@ -44,7 +44,7 @@ interface JobInterface
      * After failed, this function will be called.
      *
      * @param int $id
-     * @param array$payload
+     * @param array $payload
      */
     public function failed(int $id, array $payload): void;
 }

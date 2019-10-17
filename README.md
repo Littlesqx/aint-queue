@@ -1,28 +1,24 @@
-<h1 align="center"> aint-queue </h1>
+<h1 align="center"> :rocket: aint-queue </h1>
 
 <p align="center"> 
     <p align="center"> A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported. </p>
 </p>
 
 <p align="center"> 
-    <img src="./docs/screenshot.png" width="85%" />
+    <img src="./screenshot.png" width="85%" />
 </p>
 
 ## Required
 
 - PHP 7.1+
 - Swoole 4.3+
+- Redis 3.2+ (redis driver)
 
 ## Install
 
 ```shell
 $ composer require littlesqx/aint-queue -vvv
 ```
-
-## Document
-
-- [中文](./docs/zh-CN/overview.md)
-- English
 
 ## Usage
 
@@ -36,12 +32,10 @@ By default, aint-queue will require `config/aint-queue.php` as default config. I
 use Littlesqx\AintQueue\Driver\Redis\Queue as RedisQueue;
 
 return [
-    // channel => [...config]
     'default' => [
         'driver' => [
             'class' => RedisQueue::class,
             'connection' => [
-                // Dynamic, put everything you want here...
                 'host' => '127.0.0.1',
                 'port' => 6379,
                 'database' => '0',
@@ -49,51 +43,58 @@ return [
             ],
         ],
         'pid_path' => '/var/run/aint-queue',
-        'worker' => [
-            'consumer' => [
-                'sleep_seconds' => 2,
-                'memory_limit' => 96, // Mb
-                'dynamic_mode' => true,
-                'capacity' => 6, // The capacity that every consumer can handle in health and in short time,
-                                 // it affects the worker number when dynamic-mode.
-                'min_worker_number' => 5,
-                'max_worker_number' => 30,
-            ],
-            'monitor' => [
-                'job_snapshot' => [
-                    'interval' => 5 * 60,
-                    'handler' => [],
-                ],
-                'consumer' => [
-                    'flex_interval' => 5 * 60, // only work when consumer.dynamic_mode = true
-                ],
-                'job' => [
-                    'move_expired_interval' => 2,
-                ],
-            ],
+        'consumer' => [
+            'sleep_seconds' => 1,
+            'memory_limit' => 96,
+            'dynamic_mode' => true,
+            'capacity' => 6,
+            'flex_interval' => 5 * 60,
+            'min_worker_number' => 5,
+            'max_worker_number' => 30,
+        ],
+        'job_snapshot' => [
+            'interval' => 5 * 60,
+            'handler' => [],
         ],
     ],
 ];
 
 ```
 
-### Queue
+All the options:
+
+| name | type | comment | default |
+| :- | :- | :- | :- |
+| channel | string | The queue unit, every queue pusher and queue listener work for. Multiple channel supported. | default |
+| driver.class | string | Queue driver class, implements QueueInterface. | Redis |
+| driver.connection | map | Queue driver's config. | |
+| pid_path | string | The path of listener master pid file. Noted that permission required. | /var/run/aint-queue |
+| consumer.sleep_seconds | int | Sleep seconds after every empty pop from queue. | 1 |
+| consumer.memory_limit | int | Mb. Worker will reload when its memory usage exceeds the limit. | 96 |
+| consumer.dynamic_mode | bool | Determine whether worker's number flex dynamically. | true |  
+| consumer.capacity | int | The capacity that every consumer can handle in health and in short time, it affects the worker number when dynamic-mode. | 5 |
+| consumer.flex_interval | int | every `flex_interval` seconds monitor process try to flex the worker number. Only work when consumer.dynamic_mode = true. | 5 |
+| consumer.min_worker_number | int | Min expansion. | 5 |
+| consumer.max_worker_number | int | Max expansion. | 30 |
+| job_snapshot | map | Every `interval` seconds, `handles` will be executed. Handle must implements JobSnapshotterInterface.| |
+
+### Queue pushing
+
+You can use it in you project running via fpm/cli.
 
 ```php
 <?php
 
 use Littlesqx\AintQueue\Driver\DriverFactory;
 
-// $config = [...];
-// or $config = require .../config.php;
-$queue = DriverFactory::make('default', $config['default']['driver']);
+$queue = DriverFactory::make($channel, $options);
 
-// push a sync job
+// push a job
 $queue->push(function () {
     echo "Hello aint-queue\n";
 });
 
-// push a sync and delay job
+// push a delay job
 $closureJob = function () {
     echo "Hello aint-queue delayed\n";
 };
@@ -101,11 +102,14 @@ $queue->push($closureJob, 5);
 
 // And class job are allowed.
 // 1. Create a class which implements JobInterface, you can see the example in `/example`.
-// 2. Noted that job pushed should be un-serialize by queue-listener, this means queue-pusher and queue-listener are required to in the same project.                                          
+// 2. Noted that job pushed should be un-serialize by queue-listener,
+//    it means queue-pusher and queue-listener are required to in the same project.                                          
 // 3. You can see more examples in `example` directory.
 ```
 
 ### Manage listener
+
+We recommend that using `Supervisor` to monitor and control the listener.
 
 ```bash
 vendor/bin/aint-queue

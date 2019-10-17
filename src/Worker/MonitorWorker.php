@@ -39,25 +39,27 @@ class MonitorWorker extends AbstractWorker
         });
 
         // move expired job
-        $moveExpiredInterval = (int) ($this->options['job']['move_expired_interval'] ?? 2);
-        Timer::tick(1000 * $moveExpiredInterval, function () {
+        Timer::tick(1000, function () {
             $this->queue->migrateExpired();
         });
 
         // check queue status
-        $handlers = $this->options['monitor']['job_snapshot']['handler'] ?? [];
+        $handlers = $this->options['job_snapshot']['handler'] ?? [];
         if (!empty($handlers)) {
-            $interval = (int) ($this->options['monitor']['job_snapshot']['interval'] ?? 60 * 5);
+            $interval = (int) ($this->options['job_snapshot']['interval'] ?? 60 * 5);
             Timer::tick(1000 * $interval, function () {
                 $this->checkQueueStatus();
             });
         }
 
         // check worker status, create or release workers
-        $flexInterval = (int) ($this->options['consumer']['flex_interval'] ?? 5 * 60);
-        Timer::tick(1000 * $flexInterval, function () {
-            $this->process->write(json_encode(['type' => PipeMessage::MESSAGE_TYPE_CONSUMER_FLEX]));
-        });
+        $isDynamic = $this->options['consumer']['dynamic_mode'] ?? false;
+        if ($isDynamic) {
+            $flexInterval = (int) ($this->options['consumer']['flex_interval'] ?? 5 * 60);
+            Timer::tick(1000 * $flexInterval, function () {
+                $this->process->write(json_encode(['type' => PipeMessage::MESSAGE_TYPE_CONSUMER_FLEX]));
+            });
+        }
     }
 
     /**

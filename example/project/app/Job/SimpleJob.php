@@ -10,25 +10,18 @@
 
 namespace App\Job;
 
-use Littlesqx\AintQueue\CoJobInterface;
-use Littlesqx\AintQueue\QueueInterface;
-use Swoole\Coroutine;
+use Littlesqx\AintQueue\JobInterface;
 
-class CoJob implements CoJobInterface
+class SimpleJob implements JobInterface
 {
     /**
      * Execute current job.
      *
-     * @param QueueInterface $queue
-     *
      * @return mixed
      */
-    public function handle(QueueInterface $queue)
+    public function handle(): void
     {
-        $int = random_int(1, 10);
-        echo "coroutine job sleep#{$int} begin \n";
-        Coroutine::sleep($int);
-        echo "coroutine job sleep#{$int} end \n";
+        echo "Hello World\n";
     }
 
     /**
@@ -51,8 +44,19 @@ class CoJob implements CoJobInterface
      *
      * @return int
      */
-    public function getNextRetryTime(int $attempt): int
+    public function getRetryTime(int $attempt): int
     {
-        return time() + 60 * $attempt;
+        return 0;
+    }
+
+    /**
+     * After failed, this function will be called.
+     *
+     * @param int $id
+     * @param array $payload
+     */
+    public function failed(int $id, array $payload): void
+    {
+        echo "job#{$id} was failed.\n";
     }
 }
