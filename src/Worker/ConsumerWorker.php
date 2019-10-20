@@ -96,7 +96,7 @@ class ConsumerWorker extends AbstractWorker
             $this->queue->remove($id);
         } catch (\Throwable $t) {
             if ($job instanceof JobInterface && $job->canRetry($attempts, $t)) {
-                $delay = max($job->getRetryTime($attempts) - time(), 0);
+                $delay = max($job->retryAfter($attempts), 0);
                 $this->queue->release($id, $delay);
             } else {
                 $payload = [

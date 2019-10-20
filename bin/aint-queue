@@ -22,8 +22,8 @@ use Littlesqx\AintQueue\Console\QueueRunCommand;
 use Littlesqx\AintQueue\Console\QueueListenCommand;
 use Littlesqx\AintQueue\Console\QueueStatusCommand;
 use Littlesqx\AintQueue\Console\QueueClearCommand;
-use Littlesqx\AintQueue\Console\QueueStopCommand;
-use Littlesqx\AintQueue\Console\QueueReloadCommand;
+use Littlesqx\AintQueue\Console\WorkerStopCommand;
+use Littlesqx\AintQueue\Console\WorkerReloadCommand;
 use Littlesqx\AintQueue\Console\QueueReloadFailedCommand;
 
 $app = new Application();
@@ -33,8 +33,8 @@ $app->addCommands([
     new QueueListenCommand(),
     new QueueStatusCommand(),
     new QueueClearCommand(),
-    new QueueStopCommand(),
-    new QueueReloadCommand(),
+    new WorkerStopCommand(),
+    new WorkerReloadCommand(),
     new QueueReloadFailedCommand(),
 ]);
 
