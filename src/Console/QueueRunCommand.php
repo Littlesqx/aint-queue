@@ -42,7 +42,7 @@ class QueueRunCommand extends AbstractCommand
         $queue = $this->manager->getQueue();
 
         /** @var $job \Closure|JobInterface|null */
-        [$id, $attempts, $job] = $queue->get($messageId);
+        [$id, $attempts, $job] = $queue->get((int) $messageId);
 
         if (null === $job) {
             $output->writeln('The job is null.');

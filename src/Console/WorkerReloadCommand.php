@@ -18,9 +18,9 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-class QueueReloadCommand extends AbstractCommand
+class WorkerReloadCommand extends AbstractCommand
 {
-    protected static $defaultName = 'queue:reload';
+    protected static $defaultName = 'worker:reload';
 
     protected function configure()
     {

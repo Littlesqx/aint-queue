@@ -18,9 +18,9 @@ use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
 
-class QueueStopCommand extends AbstractCommand
+class WorkerStopCommand extends AbstractCommand
 {
-    protected static $defaultName = 'queue:stop';
+    protected static $defaultName = 'worker:stop';
 
     protected function configure()
     {
