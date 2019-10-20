@@ -32,6 +32,7 @@ By default, aint-queue will require `config/aint-queue.php` as default config. I
 use Littlesqx\AintQueue\Driver\Redis\Queue as RedisQueue;
 
 return [
+    // channel_name => [...config]
     'default' => [
         'driver' => [
             'class' => RedisQueue::class,
@@ -80,7 +81,7 @@ All the options:
 
 ### Queue pushing
 
-You can use it in you project running via fpm/cli.
+You can use it in your project running via fpm/cli.
 
 ```php
 <?php

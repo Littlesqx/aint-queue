@@ -11,6 +11,7 @@
 use Littlesqx\AintQueue\Driver\Redis\Queue as RedisQueue;
 
 return [
+    // channel_name => [...config]
     'default' => [
         'driver' => [
             'class' => RedisQueue::class,
