@@ -46,34 +46,6 @@ LUA;
     }
 
     /**
-     * Get the Lua script for pushing new job onto waiting queue.
-     *
-     * KEYS[1] - The "waiting" queue we pop jobs from, for example: queues:foo:waiting
-     * KEYS[2] - The "reserved" set we reserve jobs onto, for example: queues:foo:reserved
-     * ARGV[1] - The id of job pushed
-     * ARGV[2] - Whether should push onto the head of queue
-     *
-     * @return string
-     */
-    public static function push(): string
-    {
-        return <<<'LUA'
-if (ARGV[1] ~= nil) then
-    -- Push job onto waiting queue...
-    if (ARGV[2] == 1) then
-        redis.call('rpush', KEYS[1], ARGV[1])
-    else
-        redis.call('lpush', KEYS[1], ARGV[1])
-    end
-    -- Drop reserved record...
-    redis.call('hdel', KEYS[2], ARGV[1])
-    return true
-end
-return false
-LUA;
-    }
-
-    /**
      * Get the Lua script for releasing reserved jobs with delay.
      *
      * KEYS[1] - The "delayed" queue we release jobs onto, for example: queues:foo:delayed
@@ -114,6 +86,28 @@ if (ARGV[1] ~= nil) then
     redis.call('hdel', KEYS[2], ARGV[1])
 end
 LUA;
+    }
+
+    /**
+     * Get the Lua script for removing specific job.
+     *
+     * KEYS[1] - The queue the jobs are currently on, for example: queues:foo:reserved
+     * KEYS[2] - The queue the jobs' attempts stored set, for example: queues:foo:attempts
+     * KEYS[3] - The queue the jobs' message stored set, for example: queues:foo:messages
+     * ARGV[1] - The id of the job will be removed from queue
+     *
+     * @return string
+     */
+    public static function remove(): string
+    {
+        return <<< 'LUA'
+if (ARGV[1] ~= nil) then
+    redis.call('hdel', KEYS[1], ARGV[1])
+    redis.call('hdel', KEYS[2], ARGV[1])
+    redis.call('hdel', KEYS[3], ARGV[1])
+end
+LUA;
+
     }
 
     /**
