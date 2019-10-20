@@ -25,7 +25,7 @@ class LuaScripts
      * KEYS[1] - The "waiting" queue we pop jobs from, for example: queues:foo:waiting
      * KEYS[2] - The "reserved" set we reserve jobs onto, for example: queues:foo:reserved
      * KEYS[3] - The "attempt" queue we record jobs' attempt number, for example: queues:foo:attempts
-     * ARGV[1] - Whether should add attempt time
+     * ARGV[1] - The UNIX timestamp when job's handle timeout
      *
      * @return string
      */
@@ -36,11 +36,9 @@ class LuaScripts
 local id = redis.call('rpop', KEYS[1])
 if (id ~= false) then
     -- Add the job onto the "reserved" set and add attempt time of the job...
-    redis.call('hset', KEYS[2], id, 0)
-    if (ARGV[1] ~= nil) then
-        local attempts = redis.call('hincrby', KEYS[3], id, 1)
-    end
-end
+    redis.call('zadd', KEYS[2], ARGV[1], id)
+    redis.call('hincrby', KEYS[3], id, 1)
+end    
 return id
 LUA;
     }
@@ -56,6 +54,29 @@ LUA;
      * @return string
      */
     public static function release(): string
+    {
+        return <<<'LUA'
+-- Remove the job from the current queue...
+redis.call('zrem', KEYS[2], ARGV[1])
+
+-- Add the job onto the "delayed" queue...
+redis.call('zadd', KEYS[1], ARGV[2], ARGV[1])
+
+return true
+LUA;
+    }
+
+    /**
+     * Get the Lua script for releasing reserved jobs with delay.
+     *
+     * KEYS[1] - The "delayed" queue we release jobs onto, for example: queues:foo:delayed
+     * KEYS[2] - The queue the jobs are currently on, for example: queues:foo:fail
+     * ARGV[1] - The id of delayed job will be added onto the "delayed" queue
+     * ARGV[2] - The UNIX timestamp at which the job should become available
+     *
+     * @return string
+     */
+    public static function reloadFail(): string
     {
         return <<<'LUA'
 -- Remove the job from the current queue...
@@ -83,7 +104,7 @@ LUA;
         return <<<'LUA'
 if (ARGV[1] ~= nil) then
     redis.call('hset', KEYS[1], ARGV[1], ARGV[2])
-    redis.call('hdel', KEYS[2], ARGV[1])
+    redis.call('zrem', KEYS[2], ARGV[1])
 end
 LUA;
     }
@@ -102,7 +123,7 @@ LUA;
     {
         return <<< 'LUA'
 if (ARGV[1] ~= nil) then
-    redis.call('hdel', KEYS[1], ARGV[1])
+    redis.call('zrem', KEYS[1], ARGV[1])
     redis.call('hdel', KEYS[2], ARGV[1])
     redis.call('hdel', KEYS[3], ARGV[1])
 end

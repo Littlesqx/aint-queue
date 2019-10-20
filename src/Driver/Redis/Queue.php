@@ -123,13 +123,13 @@ class Queue extends AbstractQueue
 
         $redis = $this->getConnection();
 
-        $id = $redis->incr("{$this->channelPrefix}{$this->getChannel()}:message_id");
-        $redis->hset("{$this->channelPrefix}{$this->getChannel()}:messages", $id, $pushMessage);
+        $id = $redis->incr("{$this->channelPrefix}{$this->channel}:message_id");
+        $redis->hset("{$this->channelPrefix}{$this->channel}:messages", $id, $pushMessage);
 
         if ($delay > 0) {
-            $redis->zadd("{$this->channelPrefix}{$this->getChannel()}:delayed", [$id => time() + $delay]);
+            $redis->zadd("{$this->channelPrefix}{$this->channel}:delayed", [$id => time() + $delay]);
         } else {
-            $redis->lpush("{$this->channelPrefix}{$this->getChannel()}:waiting", [$id]);
+            $redis->lpush("{$this->channelPrefix}{$this->channel}:waiting", [$id]);
         }
 
         $this->releaseConnection($redis);
@@ -149,15 +149,15 @@ class Queue extends AbstractQueue
         $id = $redis->eval(
             LuaScripts::pop(),
             3,
-            "{$this->channelPrefix}{$this->getChannel()}:waiting",
-            "{$this->channelPrefix}{$this->getChannel()}:reserved",
-            "{$this->channelPrefix}{$this->getChannel()}:attempts",
-            1
+            "{$this->channelPrefix}{$this->channel}:waiting",
+            "{$this->channelPrefix}{$this->channel}:reserved",
+            "{$this->channelPrefix}{$this->channel}:attempts",
+            $this->options['handle_timeout'] ?? 60 * 30
         );
 
         $this->releaseConnection($redis);
 
-        return null === $id ? null : (int) $id;
+        return $id ? (int) $id : null;
     }
 
     /**
@@ -176,9 +176,9 @@ class Queue extends AbstractQueue
         $redis->eval(
             LuaScripts::remove(),
             3,
-            "{$this->channelPrefix}{$this->getChannel()}:reserved",
-            "{$this->channelPrefix}{$this->getChannel()}:attempts",
-            "{$this->channelPrefix}{$this->getChannel()}:messages",
+            "{$this->channelPrefix}{$this->channel}:reserved",
+            "{$this->channelPrefix}{$this->channel}:attempts",
+            "{$this->channelPrefix}{$this->channel}:messages",
             $id
         );
 
@@ -200,8 +200,8 @@ class Queue extends AbstractQueue
         $redis->eval(
             LuaScripts::release(),
             2,
-            "{$this->channelPrefix}{$this->getChannel()}:delayed",
-            "{$this->channelPrefix}{$this->getChannel()}:reserved",
+            "{$this->channelPrefix}{$this->channel}:delayed",
+            "{$this->channelPrefix}{$this->channel}:reserved",
             $id,
             time() + $delay
         );
@@ -230,15 +230,15 @@ class Queue extends AbstractQueue
 
         $status = self::STATUS_DONE;
 
-        if ($redis->hexists("{$this->channelPrefix}{$this->getChannel()}:messages", $id)) {
+        if ($redis->hexists("{$this->channelPrefix}{$this->channel}:messages", $id)) {
             $status = self::STATUS_WAITING;
         }
 
-        if ($redis->hexists("{$this->channelPrefix}{$this->getChannel()}:reserved", $id)) {
+        if ($redis->zscore("{$this->channelPrefix}{$this->channel}:reserved", $id)) {
             $status = self::STATUS_RESERVED;
         }
 
-        if ($redis->hexists("{$this->channelPrefix}{$this->getChannel()}:failed", $id)) {
+        if ($redis->hexists("{$this->channelPrefix}{$this->channel}:failed", $id)) {
             $status = self::STATUS_FAILED;
         }
 
@@ -256,7 +256,7 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        $keys = $redis->keys("{$this->channelPrefix}{$this->getChannel()}:*");
+        $keys = $redis->keys("{$this->channelPrefix}{$this->channel}:*");
         if (!empty($keys)) {
             $redis->del($keys);
         }
@@ -281,9 +281,9 @@ class Queue extends AbstractQueue
 
         $redis = $this->getConnection();
 
-        $attempts = $redis->hget("{$this->channelPrefix}{$this->getChannel()}:attempts", $id);
+        $attempts = $redis->hget("{$this->channelPrefix}{$this->channel}:attempts", $id);
 
-        $payload = $redis->hget("{$this->channelPrefix}{$this->getChannel()}:messages", $id);
+        $payload = $redis->hget("{$this->channelPrefix}{$this->channel}:messages", $id);
 
         $this->releaseConnection($redis);
 
@@ -311,8 +311,8 @@ class Queue extends AbstractQueue
         $redis->eval(
             LuaScripts::migrateExpiredJobs(),
             2,
-            "{$this->channelPrefix}{$this->getChannel()}:delayed",
-            "{$this->channelPrefix}{$this->getChannel()}:waiting",
+            "{$this->channelPrefix}{$this->channel}:delayed",
+            "{$this->channelPrefix}{$this->channel}:waiting",
             time()
         );
 
@@ -332,17 +332,17 @@ class Queue extends AbstractQueue
         $redis = $this->getConnection();
 
         $pipe = $redis->pipeline();
-        $pipe->get("{$this->channelPrefix}{$this->getChannel()}:message_id");
-        $pipe->hlen("{$this->channelPrefix}{$this->getChannel()}:reserved");
-        $pipe->llen("{$this->channelPrefix}{$this->getChannel()}:waiting");
-        $pipe->zcount("{$this->channelPrefix}{$this->getChannel()}:delayed", '-inf', '+inf');
-        $pipe->hlen("{$this->channelPrefix}{$this->getChannel()}:failed");
+        $pipe->get("{$this->channelPrefix}{$this->channel}:message_id");
+        $pipe->zcard("{$this->channelPrefix}{$this->channel}:reserved");
+        $pipe->llen("{$this->channelPrefix}{$this->channel}:waiting");
+        $pipe->zcount("{$this->channelPrefix}{$this->channel}:delayed", '-inf', '+inf');
+        $pipe->hlen("{$this->channelPrefix}{$this->channel}:failed");
 
         [$total, $reserved, $waiting, $delayed, $failed] = $pipe->execute();
 
         $this->releaseConnection($redis);
 
-        $done = $total ?? 0 - $waiting - $delayed - $reserved - $failed;
+        $done = ($total ?? 0) - $waiting - $delayed - $reserved - $failed;
 
         return [$waiting, $reserved, $delayed, $done, $failed, $total ?? 0];
     }
@@ -362,8 +362,8 @@ class Queue extends AbstractQueue
         $redis->eval(
             LuaScripts::fail(),
             2,
-            "{$this->channelPrefix}{$this->getChannel()}:failed",
-            "{$this->channelPrefix}{$this->getChannel()}:reserved",
+            "{$this->channelPrefix}{$this->channel}:failed",
+            "{$this->channelPrefix}{$this->channel}:reserved",
             (int) $id,
             (string) $payload
         );
@@ -381,9 +381,9 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        $ids = $redis->hgetall("{$this->channelPrefix}{$this->getChannel()}:reserved");
-        foreach ($ids as $id => $attempts) {
-            $this->release($id);
+        $ids = $redis->zrange("{$this->channelPrefix}{$this->channel}:reserved", 0, -1);
+        foreach ($ids as $id) {
+            $this->release((int) $id);
         }
 
         $this->releaseConnection($redis);
@@ -400,7 +400,7 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        $failedJobs = $redis->hgetall("{$this->channelPrefix}{$this->getChannel()}:failed");
+        $failedJobs = $redis->hgetall("{$this->channelPrefix}{$this->channel}:failed");
 
         $this->releaseConnection($redis);
 
@@ -420,7 +420,7 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        $redis->hdel("{$this->channelPrefix}{$this->getChannel()}:failed", $id);
+        $redis->hdel("{$this->channelPrefix}{$this->channel}:failed", [$id]);
 
         $this->releaseConnection($redis);
     }
@@ -438,10 +438,10 @@ class Queue extends AbstractQueue
         $redis = $this->getConnection();
 
         $redis->eval(
-            LuaScripts::release(),
+            LuaScripts::reloadFail(),
             2,
-            "{$this->channelPrefix}{$this->getChannel()}:delayed",
-            "{$this->channelPrefix}{$this->getChannel()}:failed",
+            "{$this->channelPrefix}{$this->channel}:delayed",
+            "{$this->channelPrefix}{$this->channel}:failed",
             $id,
             time() + $delay
         );

@@ -22,6 +22,7 @@ return [
                 'database' => '0',
                 // 'password' => 'password',
             ],
+            'handle_timeout' => 60 * 30,
         ],
         'pid_path' => '/var/run/aint-queue',
         'consumer' => [
