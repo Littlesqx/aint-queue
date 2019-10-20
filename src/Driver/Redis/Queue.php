@@ -173,9 +173,14 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        $redis->hdel("{$this->channelPrefix}{$this->getChannel()}:reserved", $id);
-        $redis->hdel("{$this->channelPrefix}{$this->getChannel()}:attempts", $id);
-        $redis->hdel("{$this->channelPrefix}{$this->getChannel()}:messages", $id);
+        $redis->eval(
+            LuaScripts::remove(),
+            3,
+            "{$this->channelPrefix}{$this->getChannel()}:reserved",
+            "{$this->channelPrefix}{$this->getChannel()}:attempts",
+            "{$this->channelPrefix}{$this->getChannel()}:messages",
+            $id
+        );
 
         $this->releaseConnection($redis);
     }
@@ -326,21 +331,20 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        $total = $redis->get("{$this->channelPrefix}{$this->getChannel()}:message_id") ?? 0;
+        $pipe = $redis->pipeline();
+        $pipe->get("{$this->channelPrefix}{$this->getChannel()}:message_id");
+        $pipe->hlen("{$this->channelPrefix}{$this->getChannel()}:reserved");
+        $pipe->llen("{$this->channelPrefix}{$this->getChannel()}:waiting");
+        $pipe->zcount("{$this->channelPrefix}{$this->getChannel()}:delayed", '-inf', '+inf');
+        $pipe->hlen("{$this->channelPrefix}{$this->getChannel()}:failed");
 
-        $reserved = $redis->hlen("{$this->channelPrefix}{$this->getChannel()}:reserved");
-
-        $waiting = $redis->llen("{$this->channelPrefix}{$this->getChannel()}:waiting");
-
-        $delayed = $redis->zcount("{$this->channelPrefix}{$this->getChannel()}:delayed", '-inf', '+inf');
-
-        $failed = $redis->hlen("{$this->channelPrefix}{$this->getChannel()}:failed");
+        [$total, $reserved, $waiting, $delayed, $failed] = $pipe->execute();
 
         $this->releaseConnection($redis);
 
-        $done = $total - $waiting - $delayed - $reserved - $failed;
+        $done = $total ?? 0 - $waiting - $delayed - $reserved - $failed;
 
-        return [$waiting, $reserved, $delayed, $done, $failed, $total];
+        return [$waiting, $reserved, $delayed, $done, $failed, $total ?? 0];
     }
 
     /**

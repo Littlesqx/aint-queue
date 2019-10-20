@@ -136,7 +136,7 @@ class Manager
         if ($this->isRunning()) {
             throw new RuntimeException("Listener for queue:{$this->queue->getChannel()} is running!");
         }
-        @file_put_contents($pidFile, getmypid());
+        file_put_contents($pidFile, getmypid());
     }
 
     /**
