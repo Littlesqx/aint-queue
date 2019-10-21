@@ -18,8 +18,8 @@ if (file_exists(__DIR__ . '/../../../autoload.php')) {
 }
 
 use Symfony\Component\Console\Application;
-use Littlesqx\AintQueue\Console\QueueRunCommand;
-use Littlesqx\AintQueue\Console\QueueListenCommand;
+use Littlesqx\AintQueue\Console\WorkerRunCommand;
+use Littlesqx\AintQueue\Console\WorkerListenCommand;
 use Littlesqx\AintQueue\Console\QueueStatusCommand;
 use Littlesqx\AintQueue\Console\QueueClearCommand;
 use Littlesqx\AintQueue\Console\WorkerStopCommand;
@@ -29,8 +29,8 @@ use Littlesqx\AintQueue\Console\QueueReloadFailedCommand;
 $app = new Application();
 
 $app->addCommands([
-    new QueueRunCommand(),
-    new QueueListenCommand(),
+    new WorkerRunCommand(),
+    new WorkerListenCommand(),
     new QueueStatusCommand(),
     new QueueClearCommand(),
     new WorkerStopCommand(),

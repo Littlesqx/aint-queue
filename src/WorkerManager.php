@@ -205,8 +205,6 @@ class WorkerManager
                 $differ < 0 && $this->createConsumer() && $differ++;
                 // release idle workers
                 $differ > 0 && $this->releaseConsumer() && $differ--;
-
-                sleep(1);
             }
         } catch (\Throwable $t) {
             $this->logger->error('Fail to flex consumer worker number, error: '.$t->getMessage());

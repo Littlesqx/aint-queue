@@ -17,9 +17,9 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class QueueListenCommand extends AbstractCommand
+class WorkerListenCommand extends AbstractCommand
 {
-    protected static $defaultName = 'queue:listen';
+    protected static $defaultName = 'worker:listen';
 
     protected function configure()
     {
