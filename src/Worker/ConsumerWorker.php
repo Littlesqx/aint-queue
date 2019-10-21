@@ -25,7 +25,7 @@ class ConsumerWorker extends AbstractWorker
      */
     public function work(): void
     {
-        @swoole_set_process_name(sprintf('aint-queue-consumer#%s for %s', getmypid(), $this->queue->getChannel()));
+        @swoole_set_process_name(sprintf('aint-queue: consumer#%s', $this->queue->getChannel()));
         $this->logger->info(sprintf('consumer#%s for %s is started.', getmypid(), $this->queue->getChannel()));
 
         $this->init();

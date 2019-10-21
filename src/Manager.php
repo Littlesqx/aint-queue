@@ -174,7 +174,7 @@ class Manager
      */
     public function listen(): void
     {
-        @swoole_set_process_name(sprintf('aint-queue-master#%s for %s', $this->masterPid, $this->queue->getChannel()));
+        @swoole_set_process_name(sprintf('aint-queue: master#%s', $this->queue->getChannel()));
 
         $this->queue->retryReserved();
 
