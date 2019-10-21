@@ -7,7 +7,7 @@ composer install
 #### Run Listener
 
 ```bash
-./vendor/bin/aint-queue queue:listen --channel=example
+./vendor/bin/aint-queue worker:listen --channel=example
 ```
 
 #### Run Server

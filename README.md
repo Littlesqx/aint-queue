@@ -69,6 +69,7 @@ All the options:
 | channel | string | The queue unit, every queue pusher and queue listener work for. Multiple channel supported, use `--channel` option. | default |
 | driver.class | string | Queue driver class, implements QueueInterface. | Redis |
 | driver.connection | map | Queue driver's config. | |
+| driver.handle_timeout | int | Every job's max handle seconds. | |
 | pid_path | string | The path of listener master pid file. Noted that permission required. | /var/run/aint-queue |
 | consumer.sleep_seconds | int | Sleep seconds after every empty pop from queue. | 1 |
 | consumer.memory_limit | int | Mb. Worker will reload when its memory usage exceeds the limit. | 96 |
@@ -136,12 +137,13 @@ Available commands:
   list                 Lists commands
  queue
   queue:clear          Clear the queue.
-  queue:listen         Listen the queue.
-  queue:reload         Reload worker for the queue.
   queue:reload-failed  Reload all the failed jobs onto the waiting queue.
-  queue:run            Run a job pop from the queue.
   queue:status         Get the execute status of specific queue.
-  queue:stop           Stop listening the queue.
+ worker
+  worker:listen        Listen the queue.
+  worker:reload        Reload worker for the queue.
+  worker:run           Run the specific job.
+  worker:stop          Stop listening the queue.
 ```
 
 ## Testing
