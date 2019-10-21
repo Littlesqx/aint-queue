@@ -10,8 +10,8 @@
 
 require __DIR__.'/../vendor/autoload.php';
 
-use App\Job\SimpleJob;
 use App\Job\CoroutineJob;
+use App\Job\SimpleJob;
 use Littlesqx\AintQueue\Driver\DriverFactory;
 
 $config = require __DIR__.'/../config/aint-queue.php';

@@ -128,7 +128,6 @@ if (ARGV[1] ~= nil) then
     redis.call('hdel', KEYS[3], ARGV[1])
 end
 LUA;
-
     }
 
     /**
