@@ -44,7 +44,7 @@ class SimpleJob implements JobInterface
      *
      * @return int
      */
-    public function getRetryTime(int $attempt): int
+    public function retryAfter(int $attempt): int
     {
         return 0;
     }

@@ -18,6 +18,11 @@ use Swoole\Timer;
 class MonitorWorker extends AbstractWorker
 {
     /**
+     * @var int[]
+     */
+    protected $timers = [];
+
+    /**
      * Working for handle job in loop.
      *
      * @throws \Throwable
@@ -29,9 +34,9 @@ class MonitorWorker extends AbstractWorker
 
         $this->init();
 
-        Timer::tick(1000 * 2, function () {
+        $this->timers[] = Timer::tick(1000 * 2, function () {
             if (!$this->working) {
-                Timer::clearAll();
+                $this->clearTimers();
             }
             if (!$this->workerReloadAble) {
                 $this->process->exit(1);
@@ -39,7 +44,7 @@ class MonitorWorker extends AbstractWorker
         });
 
         // move expired job
-        Timer::tick(1000, function () {
+        $this->timers[] = Timer::tick(1000, function () {
             $this->queue->migrateExpired();
         });
 
@@ -47,7 +52,7 @@ class MonitorWorker extends AbstractWorker
         $handlers = $this->options['job_snapshot']['handler'] ?? [];
         if (!empty($handlers)) {
             $interval = (int) ($this->options['job_snapshot']['interval'] ?? 60 * 5);
-            Timer::tick(1000 * $interval, function () {
+            $this->timers[] = Timer::tick(1000 * $interval, function () {
                 $this->checkQueueStatus();
             });
         }
@@ -56,7 +61,7 @@ class MonitorWorker extends AbstractWorker
         $isDynamic = $this->options['consumer']['dynamic_mode'] ?? false;
         if ($isDynamic) {
             $flexInterval = (int) ($this->options['consumer']['flex_interval'] ?? 5 * 60);
-            Timer::tick(1000 * $flexInterval, function () {
+            $this->timers[] = Timer::tick(1000 * $flexInterval, function () {
                 $this->process->write(json_encode(['type' => PipeMessage::MESSAGE_TYPE_CONSUMER_FLEX]));
             });
         }
@@ -88,6 +93,16 @@ class MonitorWorker extends AbstractWorker
                 'driver' => get_class($this->queue),
                 'channel' => $this->queue->getChannel(),
             ]);
+        }
+    }
+
+    /**
+     * Clear all timers.
+     */
+    protected function clearTimers(): void
+    {
+        foreach ($this->timers as $timer) {
+            Timer::clear($timer);
         }
     }
 }
