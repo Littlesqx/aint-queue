@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Littlesqx\AintQueue;
 
 use Littlesqx\AintQueue\Driver\Redis\Queue;
+use Littlesqx\AintQueue\Exception\InvalidArgumentException;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\Logger\DefaultLogger;
 use Littlesqx\AintQueue\Logger\LoggerInterface;
@@ -45,14 +46,26 @@ class Manager
      */
     protected $masterPid;
 
+    /**
+     * Manager constructor.
+     * @param QueueInterface $driver
+     * @param array $options
+     *
+     * @throws InvalidArgumentException
+     */
     public function __construct(QueueInterface $driver, array $options = [])
     {
         $this->queue = $driver;
         $this->options = $options;
 
+        $loggerClass = $this->options['logger'] ?? DefaultLogger::class;
+        $this->logger = new $loggerClass;
+        if (! $this->logger instanceof LoggerInterface) {
+            throw new InvalidArgumentException(sprintf('[Error] logger %s must implement LoggerInterface', $loggerClass));
+        }
+
         $this->masterPid = getmypid();
 
-        $this->logger = new DefaultLogger();
         $this->workerManager = new WorkerManager($this->queue, $this->logger, $options);
     }
 
@@ -91,20 +104,6 @@ class Manager
     public function getOptions(): array
     {
         return $this->options ?? [];
-    }
-
-    /**
-     * Set a logger.
-     *
-     * @param LoggerInterface $logger
-     *
-     * @return $this
-     */
-    public function setLogger(LoggerInterface $logger): self
-    {
-        $this->logger = $logger;
-
-        return $this;
     }
 
     /**
@@ -194,5 +193,13 @@ class Manager
     {
         $this->workerManager->stop();
         $this->removePidFile();
+    }
+
+    /**
+     * @return LoggerInterface
+     */
+    public function getLogger(): LoggerInterface
+    {
+        return $this->logger;
     }
 }

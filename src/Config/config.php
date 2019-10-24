@@ -9,6 +9,7 @@
  */
 
 use Littlesqx\AintQueue\Driver\Redis\Queue as RedisQueue;
+use Littlesqx\AintQueue\Logger\DefaultLogger;
 
 return [
     // channel_name => [...config]
@@ -24,6 +25,7 @@ return [
             ],
             'handle_timeout' => 60 * 30,
         ],
+        'logger' => DefaultLogger::class,
         'pid_path' => '/var/run/aint-queue',
         'consumer' => [
             'sleep_seconds' => 1,
