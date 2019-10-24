@@ -10,6 +10,7 @@
 
 namespace Tests;
 
+use Littlesqx\AintQueue\Exception\InvalidArgumentException;
 use Littlesqx\AintQueue\Manager;
 use PHPUnit\Framework\TestCase;
 use Tests\Stub\DemoLogger;
@@ -55,10 +56,27 @@ class ManagerTest extends TestCase
     /**
      * @test
      */
+    public function setting_invalid_logger_will_throw_exception()
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        $this->manager = new Manager(new DemoQueue(), [
+            'pid_path' => './',
+            'logger' => get_class($this),
+        ]);
+    }
+
+    /**
+     * @test
+     */
     public function can_set_logger()
     {
-        $logger = new DemoLogger();
-        $this->assertSame($this->manager, $this->manager->setLogger($logger));
+        $this->manager = new Manager(new DemoQueue(), [
+            'pid_path' => './',
+            'logger' => DemoLogger::class,
+        ]);
+
+        $this->assertInstanceOf(DemoLogger::class, $this->manager->getLogger());
     }
 
     protected function tearDown(): void

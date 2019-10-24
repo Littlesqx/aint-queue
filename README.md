@@ -30,6 +30,7 @@ By default, aint-queue will require `config/aint-queue.php` as default config. I
 <?php
 
 use Littlesqx\AintQueue\Driver\Redis\Queue as RedisQueue;
+use Littlesqx\AintQueue\Logger\DefaultLogger;
 
 return [
     // channel_name => [...config]
@@ -43,6 +44,7 @@ return [
                 // 'password' => 'password',
             ],
         ],
+        'logger' => DefaultLogger::class,
         'pid_path' => '/var/run/aint-queue',
         'consumer' => [
             'sleep_seconds' => 1,
