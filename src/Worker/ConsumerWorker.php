@@ -19,6 +19,11 @@ use Swoole\Coroutine;
 class ConsumerWorker extends AbstractWorker
 {
     /**
+     * @var int
+     */
+    protected $handled = 0;
+
+    /**
      * Working for handle job in loop.
      *
      * @throws \Throwable
@@ -59,6 +64,13 @@ class ConsumerWorker extends AbstractWorker
                     }
                 }
 
+                $maxHandle = $this->options['max_handle_number'] ?? 0;
+                if ($maxHandle > 0 && ++$this->handled >= $maxHandle) {
+                    $this->logger->info("Max handle number exceeded, consumer#{$this->pid} will be reloaded later.");
+                    $this->working = false;
+                    $this->workerReloadAble = true;
+                    continue;
+                }
                 $limit = $this->options['memory_limit'] ?? 96;
                 $used = memory_get_usage(true) / 1024 / 1024;
                 if ($limit <= $used) {

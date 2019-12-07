@@ -36,6 +36,7 @@ return [
             'flex_interval' => 5 * 60, // only work when consumer.dynamic_mode = true
             'min_worker_number' => 5,
             'max_worker_number' => 30,
+            'max_handle_number' => 0,
         ],
         'job_snapshot' => [
             'interval' => 5 * 60,
