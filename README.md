@@ -81,7 +81,7 @@ All the options:
 | consumer.flex_interval | int | every `flex_interval` seconds monitor process try to flex the worker number. Only work when consumer.dynamic_mode = true. | 5 |
 | consumer.min_worker_number | int | Min expansion. | 5 |
 | consumer.max_worker_number | int | Max expansion. | 30 |
-| consumer.max_worker_number | int | Current consumer's max job-handle time. `0` means no limit.| 0 |
+| consumer.max_handle_number | int | Current consumer's max job-handle time. `0` means no limit.| 0 |
 | job_snapshot | map | Every `interval` seconds, `handles` will be executed. Handle must implements JobSnapshotterInterface.| |
 
 ### Queue pushing
