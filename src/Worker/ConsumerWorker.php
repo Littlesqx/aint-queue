@@ -31,7 +31,7 @@ class ConsumerWorker extends AbstractWorker
     public function work(): void
     {
         @swoole_set_process_name(sprintf('aint-queue: consumer#%s', $this->queue->getChannel()));
-        $this->logger->info(sprintf('consumer#%s for %s is started.', getmypid(), $this->queue->getChannel()));
+        $this->logger->debug(sprintf('consumer#%s for %s is started.', getmypid(), $this->queue->getChannel()));
 
         $this->init();
 
@@ -66,7 +66,7 @@ class ConsumerWorker extends AbstractWorker
 
                 $maxHandle = $this->options['max_handle_number'] ?? 0;
                 if ($maxHandle > 0 && ++$this->handled >= $maxHandle) {
-                    $this->logger->info("Max handle number exceeded, consumer#{$this->pid} will be reloaded later.");
+                    $this->logger->debug("Max handle number exceeded, consumer#{$this->pid} will be reloaded later.");
                     $this->working = false;
                     $this->workerReloadAble = true;
                     continue;
@@ -74,7 +74,7 @@ class ConsumerWorker extends AbstractWorker
                 $limit = $this->options['memory_limit'] ?? 96;
                 $used = memory_get_usage(true) / 1024 / 1024;
                 if ($limit <= $used) {
-                    $this->logger->info("Memory exceeded, consumer#{$this->pid} will be reloaded later.");
+                    $this->logger->debug("Memory exceeded, consumer#{$this->pid} will be reloaded later.");
                     $this->working = false;
                     $this->workerReloadAble = true;
                 }

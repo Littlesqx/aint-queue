@@ -91,11 +91,11 @@ class WorkerManager
                 $pid = $ret['pid'] ?? -1;
                 $reload = 1 !== (int) ($ret['code'] ?? 0);
                 if (isset($this->consumers[$pid])) {
-                    $this->logger->info("consumer#{$pid} for {$this->queue->getChannel()} is stopped.");
+                    $this->logger->debug("consumer#{$pid} for {$this->queue->getChannel()} is stopped.");
                     unset($this->consumers[$pid]);
                     $reload && $this->createConsumer();
                 } elseif (isset($this->monitor[$pid])) {
-                    $this->logger->info("monitor#{$pid} for {$this->queue->getChannel()} is stopped.");
+                    $this->logger->debug("monitor#{$pid} for {$this->queue->getChannel()} is stopped.");
                     Event::del($this->monitor[$pid]->getProcess()->pipe);
                     unset($this->monitor[$pid]);
                     $reload && $this->createMonitor();

@@ -58,8 +58,15 @@ class Manager
         $this->queue = $driver;
         $this->options = $options;
 
-        $loggerClass = $this->options['logger'] ?? DefaultLogger::class;
-        $this->logger = new $loggerClass;
+        $loggerClass = $this->options['logger']['class'] ?? DefaultLogger::class;
+        $loggerOptions = $this->options['logger']['options'] ?? [];
+
+        if (!class_exists($loggerClass)) {
+            throw new InvalidArgumentException(sprintf('[Error] class %s is not found.', $loggerClass));
+        }
+
+        $this->logger = new $loggerClass($loggerOptions);
+
         if (! $this->logger instanceof LoggerInterface) {
             throw new InvalidArgumentException(sprintf('[Error] logger %s must implement LoggerInterface', $loggerClass));
         }

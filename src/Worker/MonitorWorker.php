@@ -30,7 +30,7 @@ class MonitorWorker extends AbstractWorker
     public function work(): void
     {
         @swoole_set_process_name(sprintf('aint-queue: monitor#%s', $this->queue->getChannel()));
-        $this->logger->info(sprintf('monitor#%s for %s is started.', getmypid(), $this->queue->getChannel()));
+        $this->logger->debug(sprintf('monitor#%s for %s is started.', getmypid(), $this->queue->getChannel()));
 
         $this->init();
 

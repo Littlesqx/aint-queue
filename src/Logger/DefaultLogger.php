@@ -23,16 +23,23 @@ class DefaultLogger implements LoggerInterface
      */
     protected $executor;
 
-    public function __construct()
+    /**
+     * @var array
+     */
+    protected $options;
+
+    public function __construct(array $options = [])
     {
+        $this->options = $options;
+
         $this->createExecutor();
     }
 
     protected function createExecutor()
     {
         $this->executor = new Logger('aint-queue-default');
-        $handler = new StreamHandler('/tmp/aint-queue.log');
-        $stdoutHandler = new StreamHandler(STDOUT);
+        $handler = new StreamHandler('/tmp/aint-queue.log', $this->options['level'] ?? null);
+        $stdoutHandler = new StreamHandler(STDOUT, $this->options['level'] ?? null);
         $handler->setFormatter(new LineFormatter());
         $this->executor->setHandlers([$handler, $stdoutHandler]);
     }
