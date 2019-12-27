@@ -44,7 +44,12 @@ return [
                 // 'password' => 'password',
             ],
         ],
-        'logger' => DefaultLogger::class,
+        'logger' => [
+            'class' => DefaultLogger::class,
+                'options' => [
+                    'level' => \Monolog\Logger::DEBUG,
+                ],
+            ],
         'pid_path' => '/var/run/aint-queue',
         'consumer' => [
             'sleep_seconds' => 1,
