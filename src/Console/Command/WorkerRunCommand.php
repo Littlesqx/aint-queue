@@ -10,7 +10,7 @@ declare(strict_types=1);
  * This source file is subject to the MIT license that is bundled.
  */
 
-namespace Littlesqx\AintQueue\Console;
+namespace Littlesqx\AintQueue\Console\Command;
 
 use Littlesqx\AintQueue\JobInterface;
 use Symfony\Component\Console\Input\InputInterface;

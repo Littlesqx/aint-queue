@@ -48,8 +48,9 @@ class Manager
 
     /**
      * Manager constructor.
+     *
      * @param QueueInterface $driver
-     * @param array $options
+     * @param array          $options
      *
      * @throws InvalidArgumentException
      */
@@ -67,7 +68,7 @@ class Manager
 
         $this->logger = new $loggerClass($loggerOptions);
 
-        if (! $this->logger instanceof LoggerInterface) {
+        if (!$this->logger instanceof LoggerInterface) {
             throw new InvalidArgumentException(sprintf('[Error] logger %s must implement LoggerInterface', $loggerClass));
         }
 
