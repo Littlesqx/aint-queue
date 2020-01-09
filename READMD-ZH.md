@@ -1,7 +1,8 @@
 <h1 align="center"> :rocket: aint-queue </h1>
 
 <p align="center"> 
-    <p align="center"> A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported. <a "src=README-ZH.md" target="_blank">中文说明</a></p>
+    <p align="center"> 基于 Swoole 的一个异步队列库，可弹性伸缩的工作进程池，工作进程协程支持。<a "src=README.md" target="_blank">English README</a>
+ </p>
 </p>
 
 <p align="center"> 
@@ -24,7 +25,7 @@ $ composer require littlesqx/aint-queue -vvv
 
 ### Config
 
-By default, aint-queue will require `config/aint-queue.php` as default config. If not exist, `/vendor/littlesqx/aint-queue/src/Config/config.php` will be the final config file.
+默认读取配置路径： `config/aint-queue.php`， 不存在时读取 `/vendor/littlesqx/aint-queue/src/Config/config.php` 。
 
 ```php
 <?php
@@ -70,23 +71,23 @@ return [
 
 ```
 
-All the options:
+所有参数：
 
 | name | type | comment | default |
-| :- | :- | :- | :- |
-| channel | string | The queue unit, every queue pusher and queue listener work for. Multiple channel supported, use `--channel` option. | default |
-| driver.class | string | Queue driver class, implements QueueInterface. | Redis |
-| driver.connection | map | Queue driver's config. | |
-| pid_path | string | The path of listener master pid file. Noted that permission required. | /var/run/aint-queue |
-| consumer.sleep_seconds | int | Sleep seconds after every empty pop from queue. | 1 |
-| consumer.memory_limit | int | Mb. Worker will reload when its memory usage exceeds the limit. | 96 |
-| consumer.dynamic_mode | bool | Determine whether worker's number flex dynamically. | true |  
-| consumer.capacity | int | The capacity that every consumer can handle in health and in short time, it affects the worker number when dynamic-mode. | 5 |
-| consumer.flex_interval | int | every `flex_interval` seconds monitor process try to flex the worker number. Only work when consumer.dynamic_mode = true. | 5 |
-| consumer.min_worker_number | int | Min expansion. | 5 |
-| consumer.max_worker_number | int | Max expansion. | 30 |
-| consumer.max_handle_number | int | Current consumer's max job-handle time. `0` means no limit.| 0 |
-| job_snapshot | map | Every `interval` seconds, `handles` will be executed. Handle must implements JobSnapshotterInterface.| |
+| :---- | :---- | :---- | :---- |
+| channel | string | 频道。队列的单位，每个频道内的消息对应着各自的消费者和生产者。支持多频道。在命令行使用 `--channel` 参数。 | default |
+| driver.class | string | 队列驱动类，需要实现 QueueInterface。 | Redis |
+| driver.connection | map | 驱动配置。 | |
+| pid_path | string | 主进程的 PID 文件存储路径。注意运行用户需要可读写权限。 | /var/run/aint-queue |
+| consumer.sleep_seconds | int | 当任务空闲时，每次 pop 操作后的睡眠秒数。 | 1 |
+| consumer.memory_limit | int | 工作进程的最大使用内存，超出则重启。单位 MB。| 96 |
+| consumer.dynamic_mode | bool | 是否开启自动伸缩工作进程。 | true |  
+| consumer.capacity | int | 代表每个工作进程在短时间内并且健康状态下的最多处理消息数，它影响了工作进程的自动伸缩策略。 | 5 |
+| consumer.flex_interval | int | 每 `flex_interval` 秒，监控进程尝试调整工作进程数（假设开启了自动伸缩工作进程）。 | 5 |
+| consumer.min_worker_number | int | 工作进程最小数目。 | 5 |
+| consumer.max_worker_number | int | 工作进程最大数目。 | 30 |
+| consumer.max_handle_number | int | 当前工作进程最大处理消息数，超出后重启。0 代表无限制。| 0 |
+| job_snapshot | map | 每隔 `job_snapshot.interval` 秒，`job_snapshot.handles` 会被依次执行。`job_snapshot.handles` 需要实现 JobSnapshotterInterface。| |
 
 ### Queue pushing
 
