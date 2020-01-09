@@ -15,6 +15,7 @@ use Littlesqx\AintQueue\Manager;
 use PHPUnit\Framework\TestCase;
 use Tests\Stub\DemoLogger;
 use Tests\Stub\DemoQueue;
+use Tests\Stub\InvalidLogger;
 
 class ManagerTest extends TestCase
 {
@@ -62,7 +63,9 @@ class ManagerTest extends TestCase
 
         $this->manager = new Manager(new DemoQueue(), [
             'pid_path' => './',
-            'logger' => get_class($this),
+            'logger' => [
+                'class' => InvalidLogger::class,
+            ],
         ]);
     }
 
@@ -73,7 +76,9 @@ class ManagerTest extends TestCase
     {
         $this->manager = new Manager(new DemoQueue(), [
             'pid_path' => './',
-            'logger' => DemoLogger::class,
+            'logger' => [
+                'class' => DemoLogger::class,
+            ],
         ]);
 
         $this->assertInstanceOf(DemoLogger::class, $this->manager->getLogger());
