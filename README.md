@@ -1,7 +1,7 @@
 <h1 align="center"> :rocket: aint-queue </h1>
 
 <p align="center"> 
-    <p align="center"> A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported. <a src="README-ZH.md" target="_blank">中文说明</a></p>
+    <p align="center"> A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported. <a href="README-ZH.md">中文说明</a></p>
 </p>
 
 <p align="center"> 
