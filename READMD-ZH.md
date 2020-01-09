@@ -1,7 +1,7 @@
 <h1 align="center"> :rocket: aint-queue </h1>
 
 <p align="center"> 
-    <p align="center"> 基于 Swoole 的一个异步队列库，可弹性伸缩的工作进程池，工作进程协程支持。<a "src=README.md" target="_blank">English README</a>
+    <p align="center"> 基于 Swoole 的一个异步队列库，可弹性伸缩的工作进程池，工作进程协程支持。<a src="README.md" target="_blank">English README</a>
  </p>
 </p>
 
