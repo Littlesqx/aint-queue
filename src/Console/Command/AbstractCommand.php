@@ -45,8 +45,8 @@ abstract class AbstractCommand extends Command
 
         $binPath = dirname($_SERVER['SCRIPT_FILENAME']);
 
-        if (file_exists($binPath.'/../../../config/aint-queue.php')) {
-            $config = require $binPath.'/../../../config/aint-queue.php';
+        if (file_exists($binPath.'/../../config/aint-queue.php')) {
+            $config = require $binPath.'/../../config/aint-queue.php';
         } else {
             $config = require __DIR__.'/../../Config/config.php';
         }
