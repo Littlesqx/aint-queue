@@ -90,7 +90,7 @@ class WorkerManager
             while ($ret = Process::wait(false)) {
                 $this->logger->info('recv signal SIGCHLD, ret='.json_encode($ret));
                 $pid = $ret['pid'] ?? -1;
-                $reload = 1 === (int) ($ret['code'] ?? 0);
+                $reload = SIGUSR1 === (int) ($ret['signal'] ?? 0);
                 if (isset($this->consumers[$pid])) {
                     $this->logger->debug("consumer#{$pid} for {$this->queue->getChannel()} is stopped.");
                     unset($this->consumers[$pid]);
