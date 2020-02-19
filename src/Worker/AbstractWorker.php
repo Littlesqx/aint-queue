@@ -109,11 +109,13 @@ abstract class AbstractWorker
 
         // register signal
         Process::signal(SIGUSR1, function () {
+            $this->logger->info('recv signal SIGUSR1');
             $this->working = false;
             $this->workerReloadAble = true;
         });
 
         Process::signal(SIGUSR2, function () {
+            $this->logger->info('recv signal SIGUSR2');
             $this->working = false;
             $this->workerReloadAble = false;
         });

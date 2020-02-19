@@ -88,6 +88,7 @@ class WorkerManager
         // register signal
         Process::signal(SIGCHLD, function () {
             while ($ret = Process::wait(false)) {
+                $this->logger->info('recv signal SIGCHLD, ret='.json_encode($ret));
                 $pid = $ret['pid'] ?? -1;
                 $reload = 1 === (int) ($ret['code'] ?? 0);
                 if (isset($this->consumers[$pid])) {

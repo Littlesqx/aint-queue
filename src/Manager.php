@@ -161,11 +161,13 @@ class Manager
     {
         // force exit
         Process::signal(SIGTERM, function () {
+            $this->logger->info('recv signal SIGTERM');
             $this->workerManager->stop();
             $this->exitMaster();
         });
         // custom signal - reload workers
         Process::signal(SIGUSR1, function () {
+            $this->logger->info('recv signal SIGUSR1 in master');
             $this->workerManager->reload();
         });
 
