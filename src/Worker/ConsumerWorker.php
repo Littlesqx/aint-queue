@@ -54,7 +54,12 @@ class ConsumerWorker extends AbstractWorker
                 try {
                     $this->handle($messageId);
                 } catch (\Throwable $t) {
-                    $this->logger->error(sprintf('Job exec error,  %s: %s', get_class($t), $t->getMessage()), [
+                    $this->logger->error(sprintf(
+                        'Uncaptured exception[%s] detected in %s::%d.',
+                        get_class($t),
+                        $t->getFile(),
+                        $t->getLine()
+                    ), [
                         'driver' => get_class($this->queue),
                         'channel' => $this->queue->getChannel(),
                         'message_id' => $messageId,
@@ -119,7 +124,13 @@ class ConsumerWorker extends AbstractWorker
                 $this->queue->failed($id, json_encode($payload));
                 $job instanceof JobInterface && $job->failed($id, $payload);
             }
-            $this->logger->error(get_class($t).': '.$t->getMessage(), [
+            $this->logger->error(sprintf(
+                'Error when job executed: [%s]:[%s] detected in %s::%d.',
+                get_class($t),
+                $t->getMessage(),
+                $t->getFile(),
+                $t->getLine()
+            ), [
                 'driver' => get_class($this->queue),
                 'channel' => $this->queue->getChannel(),
                 'message_id' => $id,
