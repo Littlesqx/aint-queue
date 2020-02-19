@@ -190,8 +190,6 @@ class Manager
         $this->setupPidFile();
 
         $this->registerSignal();
-
-        register_shutdown_function([$this, 'exitMaster']);
     }
 
     /**

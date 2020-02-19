@@ -89,7 +89,7 @@ class WorkerManager
         Process::signal(SIGCHLD, function () {
             while ($ret = Process::wait(false)) {
                 $pid = $ret['pid'] ?? -1;
-                $reload = 1 !== (int) ($ret['code'] ?? 0);
+                $reload = 1 === (int) ($ret['code'] ?? 0);
                 if (isset($this->consumers[$pid])) {
                     $this->logger->debug("consumer#{$pid} for {$this->queue->getChannel()} is stopped.");
                     unset($this->consumers[$pid]);

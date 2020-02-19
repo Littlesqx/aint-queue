@@ -23,6 +23,8 @@ class ConsumerWorker extends AbstractWorker
      */
     protected $handled = 0;
 
+    protected $workerReloadAble = false;
+
     /**
      * Working for handle job in loop.
      *
@@ -84,7 +86,7 @@ class ConsumerWorker extends AbstractWorker
                     $this->workerReloadAble = true;
                 }
             }
-            if (!$this->workerReloadAble) {
+            if ($this->workerReloadAble) {
                 $this->process->exit(1);
             }
         });
