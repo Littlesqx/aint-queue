@@ -15,10 +15,10 @@ interface JobMiddlewareInterface
     /**
      * Handle current middleware.
      *
-     * @param JobSnapshotterInterface $job
+     * @param JobInterface $job
      * @param \Closure                $next
      *
      * @return mixed
      */
-    public function handle(JobSnapshotterInterface $job, \Closure $next);
+    public function handle(JobInterface $job, \Closure $next);
 }
