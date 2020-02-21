@@ -17,7 +17,8 @@
         "psr/log": "^1.1",
         "monolog/monolog": "^1.24",
         "jeremeamia/superclosure": "^2.4",
-        "symfony/console": "^4.3"
+        "symfony/console": "^4.3",
+        "illuminate/pipeline": "^6.16"
     },
     "autoload": {
         "psr-4": {

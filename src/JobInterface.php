@@ -47,4 +47,11 @@ interface JobInterface
      * @param array $payload
      */
     public function failed(int $id, array $payload): void;
+
+    /**
+     * Get the middleware the job should pass through.
+     *
+     * @return JobMiddlewareInterface[]
+     */
+    public function middleware(): array;
 }

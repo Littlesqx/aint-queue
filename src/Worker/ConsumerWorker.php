@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace Littlesqx\AintQueue\Worker;
 
+use Illuminate\Pipeline\Pipeline;
 use Littlesqx\AintQueue\Exception\InvalidJobException;
 use Littlesqx\AintQueue\JobInterface;
 use Swoole\Coroutine;
@@ -22,6 +23,11 @@ class ConsumerWorker extends AbstractWorker
      * @var int
      */
     protected $handled = 0;
+
+    /**
+     * @var Pipeline
+     */
+    protected $pipeline;
 
     protected $workerReloadAble = false;
 
@@ -36,6 +42,8 @@ class ConsumerWorker extends AbstractWorker
         $this->logger->debug(sprintf('consumer#%s for %s is started.', getmypid(), $this->queue->getChannel()));
 
         $this->init();
+
+        $this->pipeline = new Pipeline();
 
         Coroutine::create(function () {
             Coroutine::defer(function () {
@@ -111,7 +119,11 @@ class ConsumerWorker extends AbstractWorker
             if (null === $job) {
                 throw new InvalidJobException('Job popped is null.');
             }
-            is_callable($job) ? $job() : $job->handle();
+            is_callable($job) ? $job() : $this->pipeline->send($job)
+                ->through($job->middleware())
+                ->then(function (JobInterface $job) {
+                    $job->handle();
+                });
             $this->queue->remove($id);
         } catch (\Throwable $t) {
             if ($job instanceof JobInterface && $job->canRetry($attempts, $t)) {
