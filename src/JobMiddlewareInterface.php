@@ -1,15 +1,14 @@
 <?php
 
-/**
- * This file is part of aint-queue.
+/*
+ * This file is part of the littlesqx/aint-queue.
  *
- * Copyright © 2012 - 2020 Xiaoman. All Rights Reserved.
+ * (c) littlesqx <littlesqx@gmail.com>
  *
- * Created by Shengqian <shengqian@xiaoman.cn>, on 2020/02/21.
+ * This source file is subject to the MIT license that is bundled.
  */
 
 namespace Littlesqx\AintQueue;
-
 
 interface JobMiddlewareInterface
 {
@@ -17,7 +16,8 @@ interface JobMiddlewareInterface
      * Handle current middleware.
      *
      * @param JobSnapshotterInterface $job
-     * @param \Closure $next
+     * @param \Closure                $next
+     *
      * @return mixed
      */
     public function handle(JobSnapshotterInterface $job, \Closure $next);
