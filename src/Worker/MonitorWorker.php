@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Littlesqx\AintQueue\Worker;
 
 use Littlesqx\AintQueue\JobSnapshotterInterface;
+use Swoole\Coroutine;
 use Swoole\Timer;
 
 class MonitorWorker extends AbstractWorker
@@ -86,7 +87,9 @@ class MonitorWorker extends AbstractWorker
                     $this->logger->warning('JobSnapshotHandler must implement JobSnapshotterInterface.');
                     continue;
                 }
-                $handler->handle($snapshot);
+                Coroutine::create(function () use ($handler, $snapshot) {
+                    $handler->handle($snapshot);
+                });
             }
         } catch (\Throwable $t) {
             $this->logger->error('Error when exec JobSnapshotHandler, '.$t->getMessage(), [
