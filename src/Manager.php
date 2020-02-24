@@ -161,7 +161,6 @@ class Manager
     {
         // force exit
         Process::signal(SIGTERM, function () {
-            $this->workerManager->stop();
             $this->exitMaster();
         });
         // custom signal - reload workers
