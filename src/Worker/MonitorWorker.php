@@ -38,9 +38,9 @@ class MonitorWorker extends AbstractWorker
         $this->timers[] = Timer::tick(1000 * 2, function () {
             if (!$this->working) {
                 $this->clearTimers();
-            }
-            if (!$this->workerReloadAble) {
-                $this->process->exit(1);
+                if ($this->workerReloadAble) {
+                    $this->process->exit(1);
+                }
             }
         });
 
