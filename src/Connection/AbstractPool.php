@@ -113,4 +113,12 @@ abstract class AbstractPool implements PoolInterface
      * @return bool
      */
     abstract public function checkConnection($connection): bool;
+
+    /**
+     * Release resources.
+     */
+    public function __destruct()
+    {
+        $this->flush();
+    }
 }
