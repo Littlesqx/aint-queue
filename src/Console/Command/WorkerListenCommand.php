@@ -33,7 +33,8 @@ class WorkerListenCommand extends AbstractCommand
         if ($this->manager->isRunning()) {
             throw new RuntimeException(\sprintf('[Error] Listener for queue %s has been started.', $input->getOption('channel')));
         }
-        // blocking
+        // This statement will fork several sub-process to consumer the message.
+        // Although it's non-blocking, master process is required to do as few things as possible.
         $this->manager->listen();
     }
 }
