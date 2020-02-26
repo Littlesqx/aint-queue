@@ -175,8 +175,7 @@ class WorkerManager
      */
     protected function releaseConsumer(): bool
     {
-        $minWorker = $this->options['consumer']['min_worker_number'] ?? 4;
-        if (count($this->consumers) <= $minWorker) {
+        if (count($this->consumers) <= $this->minConsumerNum) {
             return false;
         }
 

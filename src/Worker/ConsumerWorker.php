@@ -29,6 +29,9 @@ class ConsumerWorker extends AbstractWorker
      */
     protected $pipeline;
 
+    /**
+     * @var bool
+     */
     protected $workerReloadAble = false;
 
     /**
