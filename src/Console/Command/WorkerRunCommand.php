@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace Littlesqx\AintQueue\Console\Command;
 
+use Illuminate\Pipeline\Pipeline;
 use Littlesqx\AintQueue\JobInterface;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -52,7 +53,13 @@ class WorkerRunCommand extends AbstractCommand
 
         $output->writeln(sprintf('This job has been executed %s times', $attempts));
 
-        is_callable($job) ? $job() : $job->handle();
+        is_callable($job) ? $job()
+            : (new Pipeline())
+            ->send($job)
+            ->through($job->middleware())
+            ->then(function (JobInterface $job) {
+                $job->handle();
+            });
 
         $queue->remove($id);
     }
