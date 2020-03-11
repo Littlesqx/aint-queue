@@ -34,7 +34,7 @@ abstract class AbstractPool implements PoolInterface
     public function __construct(array $options)
     {
         $this->options = $options;
-        $this->channel = new Channel($options['size'] ?? 50);
+        $this->channel = new Channel($options['pool_size'] ?? 8);
     }
 
     /**
@@ -48,7 +48,7 @@ abstract class AbstractPool implements PoolInterface
     {
         $num = $this->channel->length();
         try {
-            if (0 === $num && $this->currentConnectionNum < ($this->options['size'] ?? 50)) {
+            if (0 === $num && $this->currentConnectionNum < ($this->options['pool_size'] ?? 50)) {
                 ++$this->currentConnectionNum;
 
                 return $this->createConnection();
@@ -58,7 +58,7 @@ abstract class AbstractPool implements PoolInterface
             throw $t;
         }
 
-        $connection = $this->channel->pop($this->options['wait_timeout'] ?? 3);
+        $connection = $this->channel->pop($this->options['pool_wait_timeout'] ?? 3);
 
         if (!$connection) {
             throw new RuntimeException('Can not pop connection from pool.');
@@ -86,7 +86,7 @@ abstract class AbstractPool implements PoolInterface
      */
     public function flush(): void
     {
-        while ($conn = $this->channel->pop($this->options['wait_timeout'] ?? 3)) {
+        while ($conn = $this->channel->pop($this->options['pool_wait_timeout'] ?? 3)) {
             $this->closeConnection($conn);
         }
     }
