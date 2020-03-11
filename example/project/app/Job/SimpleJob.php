@@ -11,6 +11,7 @@
 namespace App\Job;
 
 use Littlesqx\AintQueue\JobInterface;
+use Littlesqx\AintQueue\JobMiddlewareInterface;
 
 class SimpleJob implements JobInterface
 {
@@ -58,5 +59,15 @@ class SimpleJob implements JobInterface
     public function failed(int $id, array $payload): void
     {
         echo "job#{$id} was failed.\n";
+    }
+
+    /**
+     * Get the middleware the job should pass through.
+     *
+     * @return JobMiddlewareInterface[]
+     */
+    public function middleware(): array
+    {
+        return [];
     }
 }
