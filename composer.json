@@ -10,9 +10,9 @@
         }
     ],
     "require": {
-        "php": ">=7.1",
+        "php": ">=7.2",
         "ext-json": "*",
-        "ext-swoole": ">=4.3",
+        "ext-swoole": ">=4.4",
         "predis/predis": "^1.1",
         "psr/log": "^1.1",
         "jeremeamia/superclosure": "^2.4",
