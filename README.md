@@ -8,10 +8,12 @@
     <img src="./screenshot.png" width="85%" />
 </p>
 
+[![Build Status](https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master)](https://travis-ci.org/Littlesqx/aint-queue)
+
 ## Required
 
-- PHP 7.1+
-- Swoole 4.3+
+- PHP 7.2+
+- Swoole 4.4+
 - Redis 3.2+ (redis driver)
 
 ## Install
