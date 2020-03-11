@@ -1,14 +1,15 @@
 <h1 align="center"> :rocket: aint-queue </h1>
 
 <p align="center"> 
-    <p align="center"> A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported. <a href="README-ZH.md">中文说明</a></p>
+    <p align="center"> 
+        <a href="https://travis-ci.org/Littlesqx/aint-queue" rel="nofollow"><img src="https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master" alt="Build Status" data-canonical-src="https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master" style="max-width:100%;"></a>
+        A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported. <a href="README-ZH.md">中文说明</a>
+    </p>
 </p>
 
 <p align="center"> 
     <img src="./screenshot.png" width="85%" />
 </p>
-
-[![Build Status](https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master)](https://travis-ci.org/Littlesqx/aint-queue)
 
 ## Required
 

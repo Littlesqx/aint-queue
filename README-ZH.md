@@ -1,8 +1,10 @@
 <h1 align="center"> :rocket: aint-queue </h1>
 
 <p align="center"> 
-    <p align="center"> 基于 Swoole 的一个异步队列库，可弹性伸缩的工作进程池，工作进程协程支持。<a href="README.md">English README</a>
- </p>
+    <p align="center"> 
+        <a href="https://travis-ci.org/Littlesqx/aint-queue" rel="nofollow"><img src="https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master" alt="Build Status" data-canonical-src="https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master" style="max-width:100%;"></a>
+        基于 Swoole 的一个异步队列库，可弹性伸缩的工作进程池，工作进程协程支持。<a href="README.md">English README</a>
+     </p>
 </p>
 
 <p align="center"> 
@@ -11,8 +13,8 @@
 
 ## Required
 
-- PHP 7.1+
-- Swoole 4.3+
+- PHP 7.2+
+- Swoole 4.4+
 - Redis 3.2+ (redis driver)
 
 ## Install
