@@ -25,7 +25,7 @@ final class Application extends BaseApplication
 {
     public function __construct()
     {
-        parent::__construct();
+        parent::__construct('AintQueue Console Tool');
 
         $this->addCommands([
             new WorkerRunCommand(),
