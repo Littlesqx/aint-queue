@@ -178,9 +178,9 @@ composer test
 
 1. 通过 [issue tracker](https://github.com/littlesqx/aint-queue/issues) 提交 bug 或者建议给我们。
 2. 回答 [issue tracker](https://github.com/littlesqx/aint-queue/issues) 中的问题或者修复 bug。
-3. 更新和完善文档，或者提交一些改进的代码我们。
+3. 更新和完善文档，或者提交一些改进的代码给我们。
 
-贡献指南没有什么特别的要求，编码风格需要遵循 PSR2/PSR12。
+贡献没有什么特别的要求，只需要保证编码风格遵循 PSR2/PSR12，排版遵循 [中文文案排版指北](https://github.com/sparanoid/chinese-copywriting-guidelines)。
 
 ## License
 
