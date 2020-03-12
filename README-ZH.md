@@ -1,32 +1,37 @@
-<h1 align="center"> 
-    :rocket: aint-queue <a href="https://travis-ci.org/Littlesqx/aint-queue" rel="nofollow"><img src="https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master" alt="Build Status" data-canonical-src="https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master" style="max-width:100%;"></a>
-</h1>
+# Aint Queue
 
-<p align="center"> 
-    <p align="center"> 
-        基于 Swoole 的一个异步队列库，可弹性伸缩的工作进程池，工作进程协程支持。<a href="README.md">English README</a>
-     </p>
-</p>
+[![Build Status](https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master)](https://travis-ci.org/Littlesqx/aint-queue)
 
-<p align="center"> 
-    <img src="./screenshot.png" width="85%" />
-</p>
+基于 Swoole 的一个异步队列库，可弹性伸缩的工作进程池，工作进程协程支持。<a href="README.md">English README</a>
 
-## Required
+![img](./screenshot.png)
+
+## 特性
+
+- 默认 Redis 驱动
+- 秒级延时任务
+- 自定义重试次数和时间
+- 自定义错误回调
+- 支持任务执行中间件
+- 自定义队列快照事件
+- 弹性多进程消费
+- 工作进程协程支持
+
+## 环境
 
 - PHP 7.2+
 - Swoole 4.4+
-- Redis 3.2+ (redis driver)
+- Redis 3.2+ (redis 驱动)
 
-## Install
+## 安装
 
 ```shell
 $ composer require littlesqx/aint-queue -vvv
 ```
 
-## Usage
+## 使用
 
-### Config
+### 配置
 
 默认读取配置路径： `config/aint-queue.php`， 不存在时读取 `/vendor/littlesqx/aint-queue/src/Config/config.php` 。
 
@@ -47,6 +52,9 @@ return [
                 'database' => '0',
                 // 'password' => 'password',
             ],
+            'pool_size' => 8,
+            'pool_wait_timeout' => 1,
+            'handle_timeout' => 60 * 30,
         ],
         'logger' => [
             'class' => DefaultLogger::class,
@@ -92,9 +100,9 @@ return [
 | consumer.max_handle_number | int | 当前工作进程最大处理消息数，超出后重启。0 代表无限制。| 0 |
 | job_snapshot | map | 每隔 `job_snapshot.interval` 秒，`job_snapshot.handles` 会被依次执行。`job_snapshot.handles` 需要实现 JobSnapshotterInterface。| |
 
-### Queue pushing
+### 消息推送
 
-You can use it in your project running via fpm/cli.
+可以在 cli/fpm 运行模式下使用：
 
 ```php
 <?php
@@ -114,23 +122,24 @@ $closureJob = function () {
 };
 $queue->push($closureJob, 5);
 
-// And class job are allowed.
-// 1. Create a class which implements JobInterface, you can see the example in `/example`.
-// 2. Noted that job pushed should be un-serialize by queue-listener,
-//    it means queue-pusher and queue-listener are required to in the same project.                                          
-// 3. You can see more examples in `example` directory.
 ```
 
-### Manage listener
+更建议使用类任务，这样功能上会更加完整，也可以获得更好的编码体验和性能。
 
-We recommend that using `Supervisor` to monitor and control the listener.
+- 创建的任务类需要继承 `JobInterface`，详细可参考 `/example`
+- 注意任务必须能在生产者和消费者中（反）序列化，意味着需要在同一个项目
+- 利用队列快照事件你可以实现队列实时监控，而利用任务中间件，你可以实现任务执行速率限制，任务执行日志等。
+
+### 队列管理
+
+推荐使用 `Supervisor` 等进程管理工具守护工作进程。
 
 ```bash
 vendor/bin/aint-queue
 ```
 
 ```bash
-Console Tool
+AintQueue Console Tool
 
 Usage:
   command [options] [arguments]
@@ -158,20 +167,20 @@ Available commands:
   worker:stop          Stop listening the queue.
 ```
 
-## Testing
+## 测试
 
 ```bash
 composer test
 ```
-## Contributing
+## 贡献
 
-You can contribute in one of three ways:
+可以通过以下方式贡献：
 
-1. File bug reports using the [issue tracker](https://github.com/littlesqx/aint-queue/issues).
-2. Answer questions or fix bugs on the [issue tracker](https://github.com/littlesqx/aint-queue/issues).
-3. Contribute new features or update the wiki.
+1. 通过 [issue tracker](https://github.com/littlesqx/aint-queue/issues) 提交 bug 或者建议给我们。
+2. 回答 [issue tracker](https://github.com/littlesqx/aint-queue/issues) 中的问题或者修复 bug。
+3. 更新和完善文档，或者提交一些改进的代码我们。
 
-_The code contribution process is not very formal. You just need to make sure that you follow the PSR-2, PSR-12 coding guidelines. Any new code contributions must be accompanied by unit tests where applicable._
+贡献指南没有什么特别的要求，编码风格需要遵循 PSR2/PSR12。
 
 ## License
 
