@@ -1,16 +1,21 @@
-<h1 align="center"> 
-    :rocket: aint-queue <a href="https://travis-ci.org/Littlesqx/aint-queue" rel="nofollow"><img src="https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master" alt="Build Status" data-canonical-src="https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master" style="max-width:100%;"></a>
-</h1>
+# Aint Queue
 
-<p align="center"> 
-    <p align="center"> 
-        A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported. <a href="README-ZH.md">中文说明</a>
-    </p>
-</p>
+[![Build Status](https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master)](https://travis-ci.org/Littlesqx/aint-queue)
 
-<p align="center"> 
-    <img src="./screenshot.png" width="85%" />
-</p>
+ A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported. <a href="README-ZH.md">中文说明</a>
+
+![img](./screenshot.png)
+
+## Feature
+- On top of Swoole
+- Default Redis driver
+- Delayed job
+- Custom job retries and times
+- Custom failed callback
+- Job middleware
+- Queue snapshot event
+- Concurrent processing, Flexable multi-worker
+- Worker coroutine support
 
 ## Required
 
@@ -47,6 +52,9 @@ return [
                 'database' => '0',
                 // 'password' => 'password',
             ],
+            'pool_size' => 8,
+            'pool_wait_timeout' => 1,
+            'handle_timeout' => 60 * 30,
         ],
         'logger' => [
             'class' => DefaultLogger::class,
@@ -92,7 +100,7 @@ All the options:
 | consumer.max_handle_number | int | Current consumer's max job-handle time. `0` means no limit.| 0 |
 | job_snapshot | map | Every `interval` seconds, `handles` will be executed. Handle must implements JobSnapshotterInterface.| |
 
-### Queue pushing
+### Job pushing
 
 You can use it in your project running via fpm/cli.
 
@@ -121,7 +129,7 @@ $queue->push($closureJob, 5);
 // 3. You can see more examples in `example` directory.
 ```
 
-### Manage listener
+### Manage Queue
 
 We recommend that using `Supervisor` to monitor and control the listener.
 
@@ -130,7 +138,7 @@ vendor/bin/aint-queue
 ```
 
 ```bash
-Console Tool
+AintQueue Console Tool
 
 Usage:
   command [options] [arguments]
