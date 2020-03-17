@@ -60,7 +60,7 @@ class QueueDashboardCommand extends AbstractCommand
 
                 $pie = [];
                 foreach ($status as $tag => $item) {
-                    if ('done' !== $tag) {
+                    if ('total' !== $tag) {
                         $pie[] = [
                             'status' => $tag,
                             'value' => $item,
