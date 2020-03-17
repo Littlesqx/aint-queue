@@ -165,6 +165,7 @@ Available commands:
   list                 Lists commands
  queue
   queue:clear          Clear the queue.
+  queue:dashboard      Start http server for dashboard.
   queue:reload-failed  Reload all the failed jobs onto the waiting queue.
   queue:status         Get the execute status of specific queue.
  worker
