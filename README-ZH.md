@@ -4,8 +4,7 @@
 
 基于 Swoole 的一个异步队列库，可弹性伸缩的工作进程池，工作进程协程支持。<a href="README.md">English README</a>
 
-![img](https://i.loli.net/2020/03/17/tpde1GObTrCPH7F.gif)
-
+![screenshot.gif](https://i.loli.net/2020/03/17/4hKBcTmbdElX8fW.gif)
 ## 特性
 
 - 默认 Redis 驱动

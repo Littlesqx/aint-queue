@@ -4,8 +4,7 @@
 
  A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported. <a href="README-ZH.md">中文说明</a>
 
-![img](https://i.loli.net/2020/03/17/tpde1GObTrCPH7F.gif)
-
+![screenshot.gif](https://i.loli.net/2020/03/17/4hKBcTmbdElX8fW.gif)
 ## Feature
 - Default Redis driver
 - Delayed job
