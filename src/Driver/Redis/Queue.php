@@ -504,5 +504,4 @@ class Queue extends AbstractQueue
             $this->releaseConnection($redis);
         }
     }
-
 }

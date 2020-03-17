@@ -18,7 +18,7 @@ interface JobMiddlewareInterface
      * Handle current middleware.
      *
      * @param JobInterface $job
-     * @param \Closure                $next
+     * @param \Closure     $next
      *
      * @return mixed
      */
