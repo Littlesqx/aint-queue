@@ -14,7 +14,7 @@ use Monolog\Logger;
 
 return [
     // channel_name => [...config]
-    'default' => [
+    'example' => [
         'driver' => [
             'class' => RedisQueue::class,
             'connection' => [

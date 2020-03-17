@@ -4,10 +4,8 @@
 
  A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported. <a href="README-ZH.md">中文说明</a>
 
-![img](./screenshot.png)
-
+![screenshot.gif](https://i.loli.net/2020/03/17/4hKBcTmbdElX8fW.gif)
 ## Feature
-- On top of Swoole
 - Default Redis driver
 - Delayed job
 - Custom job retries and times
@@ -16,6 +14,7 @@
 - Queue snapshot event
 - Concurrent processing, Flexable multi-worker
 - Worker coroutine support
+- Beautiful dashboard
 
 ## Required
 
@@ -26,7 +25,7 @@
 ## Install
 
 ```shell
-$ composer require littlesqx/aint-queue -vvv
+composer require littlesqx/aint-queue -vvv
 ```
 
 ## Usage
@@ -157,6 +156,7 @@ Available commands:
   list                 Lists commands
  queue
   queue:clear          Clear the queue.
+  queue:dashboard      Start http server for dashboard.
   queue:reload-failed  Reload all the failed jobs onto the waiting queue.
   queue:status         Get the execute status of specific queue.
  worker

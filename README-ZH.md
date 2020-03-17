@@ -4,8 +4,7 @@
 
 基于 Swoole 的一个异步队列库，可弹性伸缩的工作进程池，工作进程协程支持。<a href="README.md">English README</a>
 
-![img](./screenshot.png)
-
+![screenshot.gif](https://i.loli.net/2020/03/17/4hKBcTmbdElX8fW.gif)
 ## 特性
 
 - 默认 Redis 驱动
@@ -16,6 +15,7 @@
 - 自定义队列快照事件
 - 弹性多进程消费
 - 工作进程协程支持
+- 漂亮的仪表盘
 
 ## 环境
 
@@ -26,7 +26,7 @@
 ## 安装
 
 ```shell
-$ composer require littlesqx/aint-queue -vvv
+composer require littlesqx/aint-queue -vvv
 ```
 
 ## 使用
@@ -165,6 +165,7 @@ Available commands:
   list                 Lists commands
  queue
   queue:clear          Clear the queue.
+  queue:dashboard      Start http server for dashboard.
   queue:reload-failed  Reload all the failed jobs onto the waiting queue.
   queue:status         Get the execute status of specific queue.
  worker

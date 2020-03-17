@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Littlesqx\AintQueue\Console;
 
 use Littlesqx\AintQueue\Console\Command\QueueClearCommand;
+use Littlesqx\AintQueue\Console\Command\QueueDashboardCommand;
 use Littlesqx\AintQueue\Console\Command\QueueReloadFailedCommand;
 use Littlesqx\AintQueue\Console\Command\QueueStatusCommand;
 use Littlesqx\AintQueue\Console\Command\WorkerListenCommand;
@@ -35,6 +36,7 @@ final class Application extends BaseApplication
             new WorkerStopCommand(),
             new WorkerReloadCommand(),
             new QueueReloadFailedCommand(),
+            new QueueDashboardCommand(),
         ]);
     }
 }
