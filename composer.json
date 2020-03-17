@@ -42,5 +42,8 @@
     },
     "bin": [
         "bin/aint-queue"
-    ]
+    ],
+    "config": {
+        "optimize-autoloader": true
+    }
 }
