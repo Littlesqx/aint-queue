@@ -4,7 +4,7 @@
 
 基于 Swoole 的一个异步队列库，可弹性伸缩的工作进程池，工作进程协程支持。<a href="README.md">English README</a>
 
-![img](./screenshot.png)
+![img](https://i.loli.net/2020/03/17/tpde1GObTrCPH7F.gif)
 
 ## 特性
 
@@ -16,6 +16,7 @@
 - 自定义队列快照事件
 - 弹性多进程消费
 - 工作进程协程支持
+- 漂亮的仪表盘
 
 ## 环境
 
@@ -26,7 +27,7 @@
 ## 安装
 
 ```shell
-$ composer require littlesqx/aint-queue -vvv
+composer require littlesqx/aint-queue -vvv
 ```
 
 ## 使用
