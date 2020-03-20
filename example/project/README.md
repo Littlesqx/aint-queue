@@ -16,7 +16,7 @@ composer install
 php -S localhost:8000 -t ./public/
 ```
 
-#### Pushing job
+#### Push job
 
 ```bash
 curl -v http://localhost:8000

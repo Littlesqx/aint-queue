@@ -20,5 +20,7 @@ class ExampleEvent implements JobSnapshotterInterface
     public function handle(array $snapshot): void
     {
         // TODO: implements handle()
+        // report the status by mail
+        // or record the queue status
     }
 }
