@@ -56,7 +56,7 @@ class QueueDashboardCommand extends AbstractCommand
 
             $server->handle('/api/queue_status', function (Request $request, Response $response) {
                 [$waiting, $reserved, $delayed, $done, $failed, $total] = $this->manager->getQueue()->status();
-                $status = compact('waiting', 'reserved', 'delayed', 'done', 'failed', 'total');
+                $status = compact('waiting', 'reserved', 'failed', 'delayed', 'done', 'total');
 
                 $pie = [];
                 foreach ($status as $tag => $item) {
