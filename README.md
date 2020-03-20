@@ -1,18 +1,22 @@
 # Aint Queue
 
 [![Build Status](https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master)](https://travis-ci.org/Littlesqx/aint-queue)
-
+![License](https://img.shields.io/github/license/littlesqx/aint-queue)
+![Version](https://img.shields.io/github/v/release/littlesqx/aint-queue)
+ 
  A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported. <a href="README-ZH.md">中文说明</a>
 
 ![screenshot.gif](https://i.loli.net/2020/03/17/4hKBcTmbdElX8fW.gif)
+
 ## Feature
+
 - Default Redis driver
 - Delayed job
 - Custom job retries and times
 - Custom failed callback
 - Job middleware
 - Queue snapshot event
-- Concurrent processing, Flexable multi-worker
+- Concurrent processing, flexable multi-worker
 - Worker coroutine support
 - Beautiful dashboard
 
@@ -99,7 +103,7 @@ All the options:
 | consumer.max_handle_number | int | Current consumer's max job-handle time. `0` means no limit.| 0 |
 | job_snapshot | map | Every `interval` seconds, `handles` will be executed. Handle must implements JobSnapshotterInterface.| |
 
-### Job pushing
+### Push job
 
 You can use it in your project running via fpm/cli.
 
