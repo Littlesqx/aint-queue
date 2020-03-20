@@ -37,9 +37,10 @@ class DefaultLogger implements LoggerInterface
 
     protected function createExecutor()
     {
-        $this->executor = new Logger('aint-queue-default');
-        $handler = new StreamHandler('/tmp/aint-queue.log', $this->options['level'] ?? Logger::DEBUG);
-        $stdoutHandler = new StreamHandler(STDOUT, $this->options['level'] ?? Logger::DEBUG);
+        $name = sprintf('aint-queue-%s', $this->options['channel'] ?? 'default');
+        $this->executor = new Logger($name);
+        $handler = new StreamHandler(sprintf('/tmp/%s.log', $name), $this->options['level'] ?? Logger::INFO);
+        $stdoutHandler = new StreamHandler(STDOUT, $this->options['level'] ?? Logger::INFO);
         $handler->setFormatter(new LineFormatter());
         $this->executor->setHandlers([$handler, $stdoutHandler]);
     }

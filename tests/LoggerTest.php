@@ -27,7 +27,7 @@ class LoggerTest extends TestCase
         // get the latest line
 
         $latestLine = '';
-        $fp = @fopen('/tmp/aint-queue.log', 'r');
+        $fp = @fopen('/tmp/aint-queue-default.log', 'r');
 
         if ($fp) {
             $i = -2;

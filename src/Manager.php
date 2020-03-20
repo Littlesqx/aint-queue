@@ -61,6 +61,7 @@ class Manager
 
         $loggerClass = $this->options['logger']['class'] ?? DefaultLogger::class;
         $loggerOptions = $this->options['logger']['options'] ?? [];
+        $loggerOptions['channel'] = $driver->getChannel();
 
         if (!class_exists($loggerClass)) {
             throw new InvalidArgumentException(sprintf('[Error] class %s is not found.', $loggerClass));
