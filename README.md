@@ -6,7 +6,7 @@
  
  A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported. <a href="README-ZH.md">中文说明</a>
 
-![screenshot.gif](https://i.loli.net/2020/03/17/4hKBcTmbdElX8fW.gif)
+![queue_status.gif](https://i.loli.net/2020/03/20/BTeJ8EQ1jyRxs7X.gif)
 
 ## Feature
 
