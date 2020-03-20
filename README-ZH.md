@@ -1,7 +1,9 @@
 # Aint Queue
 
 [![Build Status](https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master)](https://travis-ci.org/Littlesqx/aint-queue)
-
+![License](https://img.shields.io/github/license/littlesqx/aint-queue)
+![Version](https://img.shields.io/github/v/release/littlesqx/aint-queue)
+ 
 基于 Swoole 的一个异步队列库，可弹性伸缩的工作进程池，工作进程协程支持。<a href="README.md">English README</a>
 
 ![queue_status.gif](https://i.loli.net/2020/03/20/BTeJ8EQ1jyRxs7X.gif)
