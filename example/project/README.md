@@ -24,6 +24,14 @@ curl -v http://localhost:8000
 
 #### Check job status
 
+via Console
+
 ```bash
 ./vendor/bin/aint-queue queue:status --channel=example
+```
+
+or start the dashboard server
+
+```
+./vendor/bin/aint-queue queue:dashboard  --addr={$ip}:{$host} --channel=example
 ```
