@@ -20,6 +20,7 @@ use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\JobInterface;
 use Littlesqx\AintQueue\Serializer\Factory;
 use Predis\Client;
+use Predis\Collection\Iterator\Keyspace;
 
 class Queue extends AbstractQueue
 {
@@ -277,10 +278,9 @@ class Queue extends AbstractQueue
         $redis = $this->getConnection();
 
         try {
-            $keys = $redis->keys("{$this->channelPrefix}{$this->channel}:*");
-            if (!empty($keys)) {
-                $redis->del($keys);
-            }
+            $keyIterator = new Keyspace($redis, "{$this->channelPrefix}{$this->channel}:*", 5);
+            $keys = iterator_to_array($keyIterator);
+            !empty($keys) && $redis->del($keys);
         } catch (\Throwable $t) {
             throw $t;
         } finally {
