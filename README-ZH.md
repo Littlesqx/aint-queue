@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master)](https://travis-ci.org/Littlesqx/aint-queue)
 ![License](https://img.shields.io/github/license/littlesqx/aint-queue)
+![Php version](https://img.shields.io/packagist/php-v/littlesqx/aint-queue)
 ![Version](https://img.shields.io/github/v/release/littlesqx/aint-queue)
  
 基于 Swoole 的一个异步队列库，可弹性伸缩的工作进程池，工作进程协程支持。<a href="README.md">English README</a>

@@ -2,6 +2,7 @@
 
 [![Build Status](https://travis-ci.org/Littlesqx/aint-queue.svg?branch=master)](https://travis-ci.org/Littlesqx/aint-queue)
 ![License](https://img.shields.io/github/license/littlesqx/aint-queue)
+![Php version](https://img.shields.io/packagist/php-v/littlesqx/aint-queue)
 ![Version](https://img.shields.io/github/v/release/littlesqx/aint-queue)
  
  A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported. <a href="README-ZH.md">中文说明</a>
