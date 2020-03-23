@@ -131,14 +131,14 @@ $queue->push($closureJob, 5);
 更建议使用类任务，这样功能上会更加完整，也可以获得更好的编码体验和性能。
 
 - 创建的任务类需要实现 `JobInterface`，详细可参考 `/example`。
-  - handle (): void: 任务主体，你要执行的内容，在这里可以使用 swoole 的相关 api（比如创建协程等）；
-  - canRetry (int $attempt, $error): bool: 决定是否要重试；
-  - retryAfter (int $attempt): int: 决定重试延时时间；
-  - failed (int $id, array $payload): void: 任务彻底失败了（就是达到了重试次数还没成功）；
+  - handle (): void: 任务主体，你要执行的内容，在这里可以使用 swoole 的相关 api（比如创建协程等）
+  - canRetry (int $attempt, $error): bool: 决定是否要重试
+  - retryAfter (int $attempt): int: 决定重试延时时间
+  - failed (int $id, array $payload): void: 任务彻底失败了（就是达到了重试次数还没成功）
   - middleware (): array: 当前任务的中间件列表，原理参考 laravel pipeline 流水线
 
 
-- 注意任务必须能在生产者和消费者中（反）序列化，意味着需要在同一个项目。
+- 注意任务必须能在生产者和消费者中（反）序列化，意味着需要在同一个项目；任务序列化后不含临时性资源（数据库连接等）、尽可能小（不要定义没必要的成员变量）。
 - 利用队列快照事件你可以实现队列实时监控，而利用任务中间件，你可以实现任务执行速率限制，任务执行日志等。
 
 ### 队列管理
