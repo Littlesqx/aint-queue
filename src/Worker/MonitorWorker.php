@@ -75,27 +75,37 @@ class MonitorWorker extends AbstractWorker
     {
         try {
             [$waiting, $reserved, $delayed, $done, $failed, $total] = $this->queue->status();
-            $snapshot = compact('waiting', 'reserved', 'delayed', 'done', 'failed', 'total');
-            $handlers = $this->options['job_snapshot']['handler'] ?? [];
-            foreach ($handlers as $handler) {
-                if (!is_string($handler) || !class_exists($handler)) {
-                    $this->logger->warning('Invalid JobSnapshotHandler or class not exists.');
-                    continue;
-                }
-                $handler = new $handler();
-                if (!$handler instanceof JobSnapshotterInterface) {
-                    $this->logger->warning('JobSnapshotHandler must implement JobSnapshotterInterface.');
-                    continue;
-                }
-                Coroutine::create(function () use ($handler, $snapshot) {
-                    $handler->handle($snapshot);
-                });
-            }
         } catch (\Throwable $t) {
             $this->logger->error('Error when exec JobSnapshotHandler, '.$t->getMessage(), [
                 'driver' => get_class($this->queue),
                 'channel' => $this->queue->getChannel(),
             ]);
+            return;
+        }
+
+        $snapshot = compact('waiting', 'reserved', 'delayed', 'done', 'failed', 'total');
+        $handlers = $this->options['job_snapshot']['handler'] ?? [];
+
+        foreach ($handlers as $handler) {
+            if (!is_string($handler) || !class_exists($handler)) {
+                $this->logger->warning('Invalid JobSnapshotHandler or class not exists.');
+                continue;
+            }
+            $handler = new $handler();
+            if (!$handler instanceof JobSnapshotterInterface) {
+                $this->logger->warning('JobSnapshotHandler must implement JobSnapshotterInterface.');
+                continue;
+            }
+            Coroutine::create(function () use ($handler, $snapshot) {
+                try {
+                    $handler->handle($snapshot);
+                } catch (\Throwable $t) {
+                    $this->logger->error('Error when exec '.get_class($handler).', '.$t->getMessage(), [
+                        'driver' => get_class($this->queue),
+                        'channel' => $this->queue->getChannel(),
+                    ]);
+                }
+            });
         }
     }
 
