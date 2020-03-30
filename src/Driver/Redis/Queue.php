@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Littlesqx\AintQueue\Driver\Redis;
 
 use Littlesqx\AintQueue\AbstractQueue;
+use Littlesqx\AintQueue\Compressable;
 use Littlesqx\AintQueue\Connection\Pool\RedisPool;
 use Littlesqx\AintQueue\Connection\PoolFactory;
 use Littlesqx\AintQueue\Exception\InvalidArgumentException;
@@ -110,8 +111,13 @@ class Queue extends AbstractQueue
             $serializedMessage = $this->closureSerializer->serialize($message);
             $serializerType = Factory::SERIALIZER_TYPE_CLOSURE;
         } elseif ($message instanceof JobInterface) {
-            $serializedMessage = $this->phpSerializer->serialize($message);
-            $serializerType = Factory::SERIALIZER_TYPE_PHP;
+            if ($message instanceof Compressable) {
+                $serializedMessage = $this->compressingSerializer->serialize($message);
+                $serializerType = Factory::SERIALIZER_TYPE_COMPRESSING;
+            } else {
+                $serializedMessage = $this->phpSerializer->serialize($message);
+                $serializerType = Factory::SERIALIZER_TYPE_PHP;
+            }
         } else {
             $type = is_object($message) ? get_class($message) : gettype($message);
             throw new InvalidArgumentException($type.' type message is not allowed.');

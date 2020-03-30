@@ -27,6 +27,11 @@ class Factory
     const SERIALIZER_TYPE_CLOSURE = 'closure_serializer';
 
     /**
+     * @const string
+     */
+    const SERIALIZER_TYPE_COMPRESSING = 'compressing_serializer';
+
+    /**
      * @var SerializerInterface[]
      */
     public static $instances = [];
@@ -42,7 +47,7 @@ class Factory
      */
     public static function getInstance(string $type): SerializerInterface
     {
-        if (!in_array($type, [self::SERIALIZER_TYPE_PHP, self::SERIALIZER_TYPE_CLOSURE], true)) {
+        if (!in_array($type, [self::SERIALIZER_TYPE_PHP, self::SERIALIZER_TYPE_CLOSURE, self::SERIALIZER_TYPE_COMPRESSING], true)) {
             throw new InvalidArgumentException("The arg type: {$type} is invalid.");
         }
         if (!isset(self::$instances[$type])) {
@@ -66,6 +71,8 @@ class Factory
                 return new PhpSerializer();
             case self::SERIALIZER_TYPE_CLOSURE:
                 return new ClosureSerializer();
+            case self::SERIALIZER_TYPE_COMPRESSING:
+                return new CompressingSerializer();
             default:
                 return null;
         }

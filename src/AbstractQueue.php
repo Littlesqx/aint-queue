@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace Littlesqx\AintQueue;
 
 use Littlesqx\AintQueue\Serializer\ClosureSerializer;
+use Littlesqx\AintQueue\Serializer\CompressingSerializer;
 use Littlesqx\AintQueue\Serializer\PhpSerializer;
 
 abstract class AbstractQueue implements QueueInterface
@@ -54,6 +55,11 @@ abstract class AbstractQueue implements QueueInterface
      * @var ClosureSerializer
      */
     protected $closureSerializer;
+
+    /**
+     * @var CompressingSerializer
+     */
+    protected $compressingSerializer;
     /**
      * @var array
      */
@@ -65,6 +71,7 @@ abstract class AbstractQueue implements QueueInterface
         $this->options = $options;
         $this->phpSerializer = new PhpSerializer();
         $this->closureSerializer = new ClosureSerializer();
+        $this->compressingSerializer = new CompressingSerializer();
     }
 
     /**
