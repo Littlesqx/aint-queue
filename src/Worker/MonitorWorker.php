@@ -80,6 +80,7 @@ class MonitorWorker extends AbstractWorker
                 'driver' => get_class($this->queue),
                 'channel' => $this->queue->getChannel(),
             ]);
+
             return;
         }
 
