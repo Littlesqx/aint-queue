@@ -12,8 +12,10 @@ namespace Tests;
 
 use Littlesqx\AintQueue\Exception\InvalidArgumentException;
 use Littlesqx\AintQueue\Serializer\ClosureSerializer;
+use Littlesqx\AintQueue\Serializer\CompressingSerializer;
 use Littlesqx\AintQueue\Serializer\PhpSerializer;
 use PHPUnit\Framework\TestCase;
+use Tests\Stub\DemoObject;
 
 class SerializerTest extends TestCase
 {
@@ -91,5 +93,28 @@ class SerializerTest extends TestCase
         $closureRunResult = $closure();
 
         $this->assertSame('I am a closure', $closureRunResult);
+    }
+
+    /**
+     * @test
+     */
+    public function compressing_serializer_can_serialize_object()
+    {
+        $compressingSerializer = new CompressingSerializer();
+        $phpSerializer = new PhpSerializer();
+        $smallObject = new DemoObject([]);
+        $compressingSerialized = $compressingSerializer->serialize($smallObject);
+        $phpSerialized = $phpSerializer->serialize($smallObject);
+        $this->assertSame($phpSerialized, substr($compressingSerialized, 1));
+        $unSerialize = $compressingSerializer->unSerialize($compressingSerialized);
+        $this->assertInstanceOf(DemoObject::class, $unSerialize);
+
+        $bigObject = new DemoObject([
+            str_repeat('a', 256),
+        ]);
+        $phpSerialized = $phpSerializer->serialize($bigObject);
+        $this->assertNotSame($phpSerialized, substr($compressingSerialized, 1));
+        $unSerialize = $compressingSerializer->unSerialize($compressingSerialized);
+        $this->assertInstanceOf(DemoObject::class, $unSerialize);
     }
 }
