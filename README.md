@@ -62,10 +62,10 @@ return [
         ],
         'logger' => [
             'class' => DefaultLogger::class,
-                'options' => [
-                    'level' => \Monolog\Logger::DEBUG,
-                ],
+            'options' => [
+                'level' => \Monolog\Logger::DEBUG,
             ],
+        ],
         'pid_path' => '/var/run/aint-queue',
         'consumer' => [
             'sleep_seconds' => 1,
