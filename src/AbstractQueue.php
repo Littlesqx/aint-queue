@@ -134,6 +134,6 @@ abstract class AbstractQueue implements QueueInterface
      */
     public function isFailed(int $id): bool
     {
-        return self::STATUS_DONE === $this->getStatus($id);
+        return self::STATUS_FAILED === $this->getStatus($id);
     }
 }

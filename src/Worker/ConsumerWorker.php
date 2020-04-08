@@ -113,11 +113,11 @@ class ConsumerWorker extends AbstractWorker
     protected function handle(int $messageId): void
     {
         $job = null;
-        $id = $attempts = 0;
+        $attempts = 0;
 
         try {
             /** @var $job \Closure|JobInterface */
-            [$id, $attempts, $job] = $this->queue->get($messageId);
+            [, $attempts, $job] = $this->queue->get($messageId);
 
             if (null === $job) {
                 throw new InvalidJobException('Job popped is null.');
@@ -127,19 +127,19 @@ class ConsumerWorker extends AbstractWorker
                 ->then(function (JobInterface $job) {
                     $job->handle();
                 });
-            $this->queue->remove($id);
+            $this->queue->remove($messageId);
         } catch (\Throwable $t) {
             if ($job instanceof JobInterface && $job->canRetry($attempts, $t)) {
                 $delay = max($job->retryAfter($attempts), 0);
-                $this->queue->release($id, $delay);
+                $this->queue->release($messageId, $delay);
             } else {
                 $payload = [
                     'last_error' => get_class($t),
                     'last_error_message' => $t->getMessage(),
                     'attempts' => $attempts,
                 ];
-                $this->queue->failed($id, json_encode($payload));
-                $job instanceof JobInterface && $job->failed($id, $payload);
+                $this->queue->failed($messageId, json_encode($payload));
+                $job instanceof JobInterface && $job->failed($messageId, $payload);
             }
             $this->logger->error(sprintf(
                 'Error when job executed: [%s]:[%s] detected in %s::%d.',
@@ -150,7 +150,7 @@ class ConsumerWorker extends AbstractWorker
             ), [
                 'driver' => get_class($this->queue),
                 'channel' => $this->queue->getChannel(),
-                'message_id' => $id,
+                'message_id' => $messageId,
                 'attempts' => $attempts ?? 0,
             ]);
         }
