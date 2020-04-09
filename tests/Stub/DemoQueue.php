@@ -180,7 +180,7 @@ class DemoQueue implements QueueInterface
      *
      * @throws \Throwable
      */
-    public function resetConnection(): void
+    public function initConnection(): void
     {
         // TODO: Implement resetConnection() method.
     }
