@@ -68,8 +68,9 @@ class ConsumerWorker extends AbstractWorker
                     $this->handle($messageId);
                 } catch (\Throwable $t) {
                     $this->logger->error(sprintf(
-                        'Uncaptured exception[%s] detected in %s::%d.',
+                        'Uncaptured exception[%s:%s] detected in %s::%d.',
                         get_class($t),
+                        $t->getMessage(),
                         $t->getFile(),
                         $t->getLine()
                     ), [
@@ -112,15 +113,12 @@ class ConsumerWorker extends AbstractWorker
      */
     protected function handle(int $messageId): void
     {
-        $job = null;
-        $attempts = 0;
-
         try {
             /** @var $job \Closure|JobInterface */
             [, $attempts, $job] = $this->queue->get($messageId);
 
-            if (null === $job) {
-                throw new InvalidJobException('Job popped is null.');
+            if (empty($job)) {
+                throw new InvalidJobException('Job popped is empty.');
             }
             is_callable($job) ? $job() : $this->pipeline->send($job)
                 ->through($job->middleware())
@@ -129,17 +127,21 @@ class ConsumerWorker extends AbstractWorker
                 });
             $this->queue->remove($messageId);
         } catch (\Throwable $t) {
-            if ($job instanceof JobInterface && $job->canRetry($attempts, $t)) {
-                $delay = max($job->retryAfter($attempts), 0);
-                $this->queue->release($messageId, $delay);
+            $payload = [
+                'last_error' => get_class($t),
+                'last_error_message' => $t->getMessage(),
+                'attempts' => $attempts,
+            ];
+            if (!isset($job) || !$job instanceof JobInterface) {
+                $job->failed($messageId, $payload);
             } else {
-                $payload = [
-                    'last_error' => get_class($t),
-                    'last_error_message' => $t->getMessage(),
-                    'attempts' => $attempts,
-                ];
-                $this->queue->failed($messageId, json_encode($payload));
-                $job instanceof JobInterface && $job->failed($messageId, $payload);
+                if ($job->canRetry($attempts, $t)) {
+                    $delay = max($job->retryAfter($attempts), 0);
+                    $this->queue->release($messageId, $delay);
+                } else {
+                    $this->queue->failed($messageId, json_encode($payload));
+                    $job->failed($messageId, $payload);
+                }
             }
             $this->logger->error(sprintf(
                 'Error when job executed: [%s]:[%s] detected in %s::%d.',

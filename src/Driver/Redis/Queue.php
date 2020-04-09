@@ -17,6 +17,7 @@ use Littlesqx\AintQueue\Compressable;
 use Littlesqx\AintQueue\Connection\Pool\RedisPool;
 use Littlesqx\AintQueue\Connection\PoolFactory;
 use Littlesqx\AintQueue\Exception\InvalidArgumentException;
+use Littlesqx\AintQueue\Exception\InvalidJobException;
 use Littlesqx\AintQueue\Exception\RuntimeException;
 use Littlesqx\AintQueue\JobInterface;
 use Littlesqx\AintQueue\Serializer\Factory;
@@ -306,7 +307,7 @@ class Queue extends AbstractQueue
     public function get(int $id): array
     {
         if (!$id) {
-            return [$id, 0, null];
+            throw new InvalidArgumentException('Invalid id value: ' . $id);
         }
 
         $redis = $this->getConnection();
@@ -323,11 +324,9 @@ class Queue extends AbstractQueue
             $this->releaseConnection($redis);
         }
 
-        if (null === $payload) {
-            return [$id, 0, null];
+        if (empty($payload) || empty($message = json_decode($payload, true)) || !isset($message['serializerType'])) {
+            throw new InvalidJobException(sprintf('Broken message payload[%d]: %s', $id, $payload));
         }
-
-        $message = json_decode($payload, true);
 
         $serializer = Factory::getInstance($message['serializerType']);
 
