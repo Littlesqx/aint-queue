@@ -140,7 +140,7 @@ interface QueueInterface
      *
      * @throws \Throwable
      */
-    public function resetConnection(): void;
+    public function initConnection(): void;
 
     /**
      * Disconnect the connection.

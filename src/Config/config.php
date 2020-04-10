@@ -24,8 +24,6 @@ return [
                 'database' => '0',
                 // 'password' => 'password',
             ],
-            'pool_size' => 8,
-            'pool_wait_timeout' => 1,
             'handle_timeout' => 60 * 30,
         ],
         'logger' => [

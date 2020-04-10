@@ -104,7 +104,7 @@ abstract class AbstractWorker
         // required
         Runtime::enableCoroutine();
         // reset connection
-        $this->queue->resetConnection();
+        $this->queue->initConnection();
         $this->logger->resetConnection();
 
         // register signal
