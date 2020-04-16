@@ -21,6 +21,12 @@ return [
                 // 'password' => 'password',
             ],
         ],
+        'logger' => [
+            'class' => \Littlesqx\AintQueue\Logger\DefaultLogger::class,
+            'options' => [
+                'level' => \Monolog\Logger::DEBUG,
+            ],
+        ],
         'pid_path' => '/var/run/aint-queue',
         'consumer' => [
             'sleep_seconds' => 1,
