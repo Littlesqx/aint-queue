@@ -70,7 +70,7 @@ class RedisConnector implements Connector
      */
     public function isConnected(): bool
     {
-        return $this->connector && $this->connector->isConnected();
+        return $this->connector && ($this->connector->isConnected() || $this->connector->ping());
     }
 
     /**
