@@ -95,12 +95,6 @@ class RedisConnector implements Connector
             throw new ConnectorException('Connector is not connected');
         }
 
-        if (!method_exists($this->connector, $name)) {
-            throw new \BadMethodCallException(sprintf(
-                '%s::%s is not defined', get_class($this->connector), $name
-            ));
-        }
-
         return $this->connector->{$name}(...$arguments);
     }
 }
