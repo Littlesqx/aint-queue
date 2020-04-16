@@ -127,6 +127,7 @@ class ConsumerWorker extends AbstractWorker
                 });
             $this->queue->remove($messageId);
         } catch (\Throwable $t) {
+            $attempts = $attempts ?? 0;
             $payload = [
                 'last_error' => get_class($t),
                 'last_error_message' => $t->getMessage(),
@@ -153,7 +154,7 @@ class ConsumerWorker extends AbstractWorker
                 'driver' => get_class($this->queue),
                 'channel' => $this->queue->getChannel(),
                 'message_id' => $messageId,
-                'attempts' => $attempts ?? 0,
+                'attempts' => $attempts,
             ]);
         }
     }
