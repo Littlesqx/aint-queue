@@ -45,5 +45,8 @@
     ],
     "config": {
         "optimize-autoloader": true
+    },
+    "archive": {
+        "exclude": ["/example"]
     }
 }
