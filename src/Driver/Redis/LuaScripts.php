@@ -126,6 +126,7 @@ if (ARGV[1] ~= nil) then
     redis.call('zrem', KEYS[1], ARGV[1])
     redis.call('hdel', KEYS[2], ARGV[1])
     redis.call('hdel', KEYS[3], ARGV[1])
+    redis.call('hdel', KEYS[4], ARGV[1])
 end
 LUA;
     }

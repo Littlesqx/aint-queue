@@ -157,9 +157,10 @@ class Queue extends AbstractQueue
 
         $redis->eval(
             LuaScripts::remove(),
-            3,
+            4,
             "{$this->channelPrefix}{$this->channel}:reserved",
             "{$this->channelPrefix}{$this->channel}:attempts",
+            "{$this->channelPrefix}{$this->channel}:failed",
             "{$this->channelPrefix}{$this->channel}:messages",
             $id
         );
