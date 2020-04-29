@@ -97,4 +97,14 @@ class RedisConnector implements Connector
 
         return $this->connector->{$name}(...$arguments);
     }
+
+    /**
+     * Get original connector.
+     *
+     * @return Client
+     */
+    public function getConnector(): Client
+    {
+        return $this->connector;
+    }
 }

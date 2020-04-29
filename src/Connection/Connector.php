@@ -38,4 +38,11 @@ interface Connector
      * @throws ConnectorException
      */
     public function disConnect(): void;
+
+    /**
+     * Get original connector.
+     *
+     * @return mixed
+     */
+    public function getConnector();
 }

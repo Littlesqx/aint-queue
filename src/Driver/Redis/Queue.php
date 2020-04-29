@@ -232,7 +232,49 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        $keyIterator = new Keyspace($redis, "{$this->channelPrefix}{$this->channel}:*", 5);
+        // delete waiting queue
+        while ($redis->llen("{$this->channelPrefix}{$this->channel}:waiting") > 0) {
+            $redis->ltrim("{$this->channelPrefix}{$this->channel}:waiting", 0, -501);
+        }
+        // delete reserved queue
+        while ($redis->zcard("{$this->channelPrefix}{$this->channel}:reserved") > 0) {
+            $redis->zremrangebyrank("{$this->channelPrefix}{$this->channel}:reserved", 0, 499);
+        }
+
+        // delete delayed queue
+        while ($redis->zcard("{$this->channelPrefix}{$this->channel}:delayed") > 0) {
+            $redis->zremrangebyrank("{$this->channelPrefix}{$this->channel}:delayed", 0, 499);
+        }
+
+        // delete failed queue
+        $cursor = 0;
+        do {
+            [$cursor, $data] = $redis->hscan("{$this->channelPrefix}{$this->channel}:failed", $cursor, ['COUNT' => 200]);
+            if (!empty($fields = array_keys($data))) {
+                $redis->hdel("{$this->channelPrefix}{$this->channel}:failed", $fields);
+            }
+        } while ($cursor != 0);
+
+        // delete attempts queue
+        $cursor = 0;
+        do {
+            [$cursor, $data] = $redis->hscan("{$this->channelPrefix}{$this->channel}:attempts", $cursor, ['COUNT' => 200]);
+            if (!empty($fields = array_keys($data))) {
+                $redis->hdel("{$this->channelPrefix}{$this->channel}:attempts", $fields);
+            }
+        } while ($cursor != 0);
+
+        // delete messages queue
+        $cursor = 0;
+        do {
+            [$cursor, $data] = $redis->hscan("{$this->channelPrefix}{$this->channel}:messages", $cursor, ['COUNT' => 200]);
+            if (!empty($fields = array_keys($data))) {
+                $redis->hdel("{$this->channelPrefix}{$this->channel}:messages", $fields);
+            }
+        } while ($cursor != 0);
+
+        // delete others
+        $keyIterator = new Keyspace($redis->getConnector(), "{$this->channelPrefix}{$this->channel}:*", 50);
         !empty($keys = iterator_to_array($keyIterator)) && $redis->del($keys);
     }
 
@@ -355,7 +397,16 @@ class Queue extends AbstractQueue
     {
         $redis = $this->getConnection();
 
-        return $redis->hgetall("{$this->channelPrefix}{$this->channel}:failed");
+        $failedJobs = [];
+        $cursor = 0;
+        do {
+            [$cursor, $data] = $redis->hscan("{$this->channelPrefix}{$this->channel}:failed", $cursor, [
+                'COUNT' => 10,
+            ]);
+            $failedJobs = array_merge($failedJobs, $data);
+        } while ($cursor != 0);
+
+        return $failedJobs;
     }
 
     /**
