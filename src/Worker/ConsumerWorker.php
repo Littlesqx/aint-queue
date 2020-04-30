@@ -134,7 +134,7 @@ class ConsumerWorker extends AbstractWorker
                 'attempts' => $attempts,
             ];
             if (!isset($job) || !$job instanceof JobInterface) {
-                $job->failed($messageId, $payload);
+                $this->queue->failed($messageId, json_encode($payload));
             } else {
                 if ($job->canRetry($attempts, $t)) {
                     $delay = max($job->retryAfter($attempts), 0);
