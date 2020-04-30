@@ -403,7 +403,7 @@ class Queue extends AbstractQueue
             [$cursor, $data] = $redis->hscan("{$this->channelPrefix}{$this->channel}:failed", $cursor, [
                 'COUNT' => 10,
             ]);
-            $failedJobs = array_merge($failedJobs, $data);
+            $failedJobs += $data;
         } while ($cursor != 0);
 
         return $failedJobs;
