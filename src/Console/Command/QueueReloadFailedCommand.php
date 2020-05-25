@@ -34,5 +34,7 @@ class QueueReloadFailedCommand extends AbstractCommand
         foreach ($failedJobs as $id => $payload) {
             $this->manager->getQueue()->reloadFailed($id);
         }
+
+        return 0;
     }
 }

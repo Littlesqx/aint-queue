@@ -38,5 +38,7 @@ class QueueClearCommand extends AbstractCommand
             $this->manager->getQueue()->clear();
             $io->writeln('Success to clear!');
         }
+
+        return 0;
     }
 }

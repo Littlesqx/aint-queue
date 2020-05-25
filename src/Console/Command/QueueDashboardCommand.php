@@ -84,5 +84,7 @@ class QueueDashboardCommand extends AbstractCommand
                     ));
             }
         });
+
+        return 0;
     }
 }

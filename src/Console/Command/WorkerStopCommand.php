@@ -45,5 +45,7 @@ class WorkerStopCommand extends AbstractCommand
             Process::kill($pid, SIGTERM);
             $io->writeln('Success to stop!');
         }
+
+        return 0;
     }
 }

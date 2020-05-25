@@ -62,5 +62,7 @@ class WorkerRunCommand extends AbstractCommand
             });
 
         $queue->remove($id);
+
+        return 0;
     }
 }

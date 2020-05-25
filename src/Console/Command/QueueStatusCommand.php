@@ -48,5 +48,7 @@ class QueueStatusCommand extends AbstractCommand
             ->setRows([[$waiting, $reserved, "<comment>$delayed</comment>", "<info>$done</info>", "<comment>$failed</comment>", $total]]);
 
         $table->render();
+
+        return 0;
     }
 }

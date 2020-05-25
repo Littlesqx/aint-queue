@@ -36,5 +36,7 @@ class WorkerListenCommand extends AbstractCommand
         // This statement will fork several sub-process to consumer the message.
         // Although it's non-blocking, master process is required to do as few things as possible.
         $this->manager->listen();
+
+        return 0;
     }
 }

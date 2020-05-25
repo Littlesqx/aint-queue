@@ -45,5 +45,7 @@ class WorkerReloadCommand extends AbstractCommand
             Process::kill($pid, SIGUSR1);
             $io->writeln('Success to reload!');
         }
+
+        return 0;
     }
 }
