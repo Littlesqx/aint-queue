@@ -51,6 +51,10 @@ $config = [
             ],
         ],
         */
+        'example_queue' => [
+            'class' => \app\library\queue\YiiQueue::class,
+            'channel' => 'example',
+        ],
     ],
     'params' => $params,
 ];

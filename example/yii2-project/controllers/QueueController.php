@@ -12,8 +12,12 @@ class QueueController extends Controller
     {
         $job = new SimpleJob(1, 'Hello', 'World');
 
+        // get from factory
         $queue = Factory::make(\Yii::$app->params['aint-queue']['example_channel']);
 
         $queue->push($job);
+
+        // get from global component
+        \Yii::$app->example_queue->push($job);
     }
 }
