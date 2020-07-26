@@ -1,0 +1,21 @@
+{
+    "name": "aint-queue/demo",
+    "description": "AintQueue demo",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Littlesqx",
+            "email": "Littlesqx@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.1",
+        "littlesqx/aint-queue": "dev-master"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app"
+        }
+    }
+}
