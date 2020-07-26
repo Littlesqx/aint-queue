@@ -5,7 +5,7 @@
 ![Php version](https://img.shields.io/packagist/php-v/littlesqx/aint-queue)
 ![Version](https://img.shields.io/github/v/release/littlesqx/aint-queue)
  
- A async-queue library built on top of swoole, flexable multi-consumer, coroutine supported. <a href="README-ZH.md">中文说明</a>
+ An async-queue library built on top of swoole, flexible multi-consumer, coroutine supported. <a href="README-ZH.md">中文说明</a>
 
 ![queue_status.gif](https://i.loli.net/2020/03/20/BTeJ8EQ1jyRxs7X.gif)
 
@@ -13,11 +13,11 @@
 
 - Default Redis driver
 - Delayed job
-- Custom job retries and times
+- The custom job retries and times
 - Custom failed callback
 - Job middleware
 - Queue snapshot event
-- Concurrent processing, flexable multi-worker
+- Concurrent processing, flexible multi-worker
 - Worker coroutine support
 - Beautiful dashboard
 
