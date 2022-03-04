@@ -114,8 +114,8 @@ LUA;
      *
      * KEYS[1] - The queue the jobs are currently on, for example: queues:foo:reserved
      * KEYS[2] - The queue the jobs' attempts stored set, for example: queues:foo:attempts
-     * KEYS[2] - The queue the jobs' failed stored set, for example: queues:foo:failed
-     * KEYS[3] - The queue the jobs' message stored set, for example: queues:foo:messages
+     * KEYS[3] - The queue the jobs' failed stored set, for example: queues:foo:failed
+     * KEYS[4] - The queue the jobs' message stored set, for example: queues:foo:messages
      * ARGV[1] - The id of the job will be removed from queue
      *
      * @return string
